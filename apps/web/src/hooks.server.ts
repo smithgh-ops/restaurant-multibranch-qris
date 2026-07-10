@@ -97,9 +97,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	// Protect non-public routes
-	if (!PUBLIC_PATHS.has(path) && !path.startsWith('/dashboard') === false) {
-		// path is a dashboard route
-	}
 	if (path.startsWith('/dashboard') && !event.locals.user) {
 		throw redirect(302, '/');
 	}

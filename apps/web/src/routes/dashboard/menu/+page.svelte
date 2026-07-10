@@ -17,9 +17,15 @@
 			: data.items
 	);
 
+	const priceFormatter = new Intl.NumberFormat('id-ID', {
+		style: 'currency',
+		currency: 'IDR',
+		minimumFractionDigits: 0
+	});
+
 	function formatPrice(price: string) {
 		const num = parseFloat(price);
-		return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+		return priceFormatter.format(num);
 	}
 
 	function getCategoryName(id: number) {
