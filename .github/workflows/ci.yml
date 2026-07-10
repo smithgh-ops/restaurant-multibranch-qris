@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, 'copilot/*']
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, 'copilot/*']
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
@@ -36,6 +36,9 @@ jobs:
 
       - name: Build
         run: go build ./...
+
+      - name: Test
+        run: go test ./...
 
   # ─────────────────────────────────────────────────────────────────────────────
   # SvelteKit Web

@@ -11,12 +11,19 @@ import (
 	"time"
 
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/config"
+	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/database"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/router"
 )
 
 // Run starts the HTTP server and gracefully shuts down on SIGINT/SIGTERM.
 func Run(cfg *config.Config) error {
-	r := router.New(cfg)
+	db, err := database.NewMySQL(cfg)
+	if err != nil {
+		return fmt.Errorf("database: %w", err)
+	}
+	defer db.Close()
+
+	r := router.New(cfg, db)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),

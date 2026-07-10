@@ -27,13 +27,23 @@ type Config struct {
 	// CORS
 	CORSOrigins string
 
-	// JWT (placeholder; real secret must be set via env in production)
-	JWTSecret string
+	// JWT
+	JWTSecret           string
+	AccessTokenMinutes  int // duration of access token in minutes
+	RefreshTokenDays    int // duration of refresh token in days
 }
 
 // Load reads configuration from environment variables, falling back to safe defaults.
 func Load() *Config {
 	redisDB, _ := strconv.Atoi(getEnv("REDIS_DB", "0"))
+	accessTokenMinutes, _ := strconv.Atoi(getEnv("JWT_ACCESS_TOKEN_MINUTES", "15"))
+	refreshTokenDays, _ := strconv.Atoi(getEnv("JWT_REFRESH_TOKEN_DAYS", "30"))
+	if accessTokenMinutes <= 0 {
+		accessTokenMinutes = 15
+	}
+	if refreshTokenDays <= 0 {
+		refreshTokenDays = 30
+	}
 	return &Config{
 		AppName: getEnv("APP_NAME", "RestoQRIS"),
 		AppEnv:  getEnv("APP_ENV", "development"),
@@ -51,7 +61,9 @@ func Load() *Config {
 
 		CORSOrigins: getEnv("CORS_ORIGINS", "http://localhost:5173"),
 
-		JWTSecret: getEnv("JWT_SECRET", "change-me-in-production"),
+		JWTSecret:          getEnv("JWT_SECRET", "change-me-in-production"),
+		AccessTokenMinutes: accessTokenMinutes,
+		RefreshTokenDays:   refreshTokenDays,
 	}
 }
 
