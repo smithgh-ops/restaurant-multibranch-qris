@@ -13,6 +13,8 @@ jobs:
   api:
     name: Go API — Build & Vet
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: apps/api
@@ -41,6 +43,8 @@ jobs:
   web:
     name: SvelteKit Web — Install, Check & Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: apps/web
