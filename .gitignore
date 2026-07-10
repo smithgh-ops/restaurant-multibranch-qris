@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+jspm_packages/
+
+# Build outputs
+dist/
+build/
+.output/
+.vercel/
+.netlify/
+
+# SvelteKit
+.svelte-kit/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docker volumes / data
+mysql_data/
+redis_data/
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS
+.DS_Store
