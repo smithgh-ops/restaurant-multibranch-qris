@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { enhance } from '$app/forms';
 
-	let { children } = $props();
+	let { children, data } = $props();
 
 	const navItems = [
 		{ href: '/dashboard', label: 'Dashboard', icon: '🏠' },
@@ -26,7 +27,11 @@
 	>
 		<div class="px-6 py-5 border-b border-gray-100">
 			<span class="text-xl font-bold text-orange-600">RestoQRIS</span>
-			<p class="text-xs text-gray-400 mt-0.5">Multi-Cabang</p>
+			{#if data.organization}
+				<p class="text-xs text-gray-400 mt-0.5 truncate">{data.organization.name}</p>
+			{:else}
+				<p class="text-xs text-gray-400 mt-0.5">Multi-Cabang</p>
+			{/if}
 		</div>
 
 		<nav class="flex-1 overflow-y-auto py-4 px-3">
@@ -45,12 +50,14 @@
 		</nav>
 
 		<div class="px-4 py-4 border-t border-gray-100">
-			<a
-				href="/"
-				class="flex items-center gap-2 text-sm text-gray-500 hover:text-red-500 transition-colors"
-			>
-				<span>🚪</span> Keluar
-			</a>
+			<form method="POST" action="/logout" use:enhance>
+				<button
+					type="submit"
+					class="flex items-center gap-2 text-sm text-gray-500 hover:text-red-500 transition-colors w-full"
+				>
+					<span>🚪</span> Keluar
+				</button>
+			</form>
 		</div>
 	</aside>
 
@@ -74,7 +81,9 @@
 			>
 				☰
 			</button>
-			<h1 class="text-sm font-semibold text-gray-700">Selamat datang, Admin</h1>
+			<h1 class="text-sm font-semibold text-gray-700">
+				Selamat datang, {data.user?.name ?? 'Admin'}
+			</h1>
 		</header>
 
 		<main class="flex-1 overflow-y-auto p-6">

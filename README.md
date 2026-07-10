@@ -117,27 +117,38 @@ Untuk lingkungan produksi, disarankan menggunakan alat migrasi seperti [golang-m
 .
 ├── apps/
 │   ├── api/                        # Go Gin backend
-│   │   ├── cmd/api/main.go         # Entry point
+│   │   ├── cmd/api/main.go         # Entry point API
+│   │   ├── cmd/seed/main.go        # CLI bootstrap admin pertama
 │   │   ├── internal/
+│   │   │   ├── auth/               # Login, refresh, logout, JWT, bcrypt
+│   │   │   ├── branch/             # CRUD cabang
+│   │   │   ├── menu/               # Kategori, item, setting per-cabang
+│   │   │   ├── organization/       # Data organisasi
 │   │   │   ├── config/             # Konfigurasi dari env vars
 │   │   │   ├── database/           # Koneksi MySQL & Redis
-│   │   │   ├── handler/            # HTTP handler (health, info, dst.)
-│   │   │   ├── middleware/         # Logger, Recovery, CORS
+│   │   │   ├── handler/            # HTTP handler (health, info)
+│   │   │   ├── middleware/         # Logger, Recovery, CORS, Auth JWT
 │   │   │   ├── router/             # Registrasi route
 │   │   │   └── server/             # HTTP server lifecycle
-│   │   ├── migrations/             # File SQL migrasi terurut
+│   │   ├── migrations/             # File SQL migrasi terurut (001–011)
 │   │   ├── Dockerfile
 │   │   └── go.mod
 │   └── web/                        # SvelteKit frontend
 │       ├── src/
+│       │   ├── hooks.server.ts     # SSR auth middleware, route protection
 │       │   ├── lib/api/client.ts   # Typed API client
 │       │   └── routes/
-│       │       ├── +page.svelte    # Halaman login
-│       │       └── dashboard/      # Dashboard shell & halaman utama
+│       │       ├── +page.svelte          # Halaman login (real API)
+│       │       ├── +page.server.ts       # Login form action
+│       │       ├── logout/               # Logout action endpoint
+│       │       └── dashboard/            # Dashboard shell & sub-halaman
+│       │           ├── branches/         # Manajemen cabang
+│       │           └── menu/             # Manajemen menu & kategori
 │       ├── Dockerfile
 │       └── package.json
 ├── docs/
-│   └── PRD_Restaurant_Multi_Cabang_QRIS.md
+│   ├── PRD_Restaurant_Multi_Cabang_QRIS.md
+│   └── PROGRESS.md                 # Catatan progres pengembangan
 ├── .github/
 │   └── workflows/ci.yml            # GitHub Actions CI
 ├── compose.yaml                    # Docker Compose
@@ -149,34 +160,80 @@ Untuk lingkungan produksi, disarankan menggunakan alat migrasi seperti [golang-m
 
 ## Endpoint Utama
 
-| Method | Path            | Deskripsi                          |
-|--------|-----------------|------------------------------------|
-| GET    | `/health`       | Status kesehatan server            |
-| GET    | `/api/v1/info`  | Informasi aplikasi (nama, versi)   |
+| Method | Path                              | Auth | Deskripsi                                |
+|--------|-----------------------------------|------|------------------------------------------|
+| GET    | `/health`                         | —    | Status kesehatan server                  |
+| GET    | `/api/v1/info`                    | —    | Informasi aplikasi (nama, versi)         |
+| POST   | `/api/v1/auth/login`              | —    | Login, mendapat access + refresh token   |
+| POST   | `/api/v1/auth/refresh`            | —    | Refresh access token (rotasi)            |
+| POST   | `/api/v1/auth/logout`             | —    | Logout, revoke refresh token             |
+| GET    | `/api/v1/auth/me`                 | JWT  | Profil user + daftar role                |
+| GET    | `/api/v1/organization`            | JWT  | Data organisasi pengguna                 |
+| GET    | `/api/v1/branches`                | JWT  | Daftar cabang                            |
+| POST   | `/api/v1/branches`                | JWT  | Buat cabang baru                         |
+| GET    | `/api/v1/branches/:id`            | JWT  | Detail cabang                            |
+| PATCH  | `/api/v1/branches/:id`            | JWT  | Update cabang                            |
+| GET    | `/api/v1/menu/categories`         | JWT  | Daftar kategori menu                     |
+| POST   | `/api/v1/menu/categories`         | JWT  | Buat kategori                            |
+| PATCH  | `/api/v1/menu/categories/:id`     | JWT  | Update kategori                          |
+| GET    | `/api/v1/menu/items`              | JWT  | Daftar item menu (filter tersedia)       |
+| POST   | `/api/v1/menu/items`              | JWT  | Buat item menu                           |
+| GET    | `/api/v1/menu/items/:id`          | JWT  | Detail item                              |
+| PATCH  | `/api/v1/menu/items/:id`          | JWT  | Update item                              |
+| GET    | `/api/v1/menu/items/:id/branches` | JWT  | Setting harga per-cabang                 |
+| PUT    | `/api/v1/menu/items/:id/branches/:branch_id` | JWT | Upsert setting per-cabang   |
 
-Endpoint selanjutnya (auth, branches, menus, orders, payments, kitchen, reports) akan ditambahkan pada sprint berikutnya.
+Endpoint selanjutnya (orders, payments, kitchen, reports) akan ditambahkan pada fase berikutnya.
 
 ---
 
 ## CI/CD
 
-GitHub Actions menjalankan dua job paralel pada setiap push/PR ke `main` dan `develop`:
+GitHub Actions menjalankan dua job paralel pada setiap push/PR ke `main`, `develop`, dan `copilot/*`:
 
-- **Go API**: `go vet` + `go build`
+- **Go API**: `go vet` + `go build` + `go test ./...`
 - **SvelteKit Web**: `npm ci` + `svelte-kit sync` + `svelte-check` + `npm run build`
 
 ---
 
-## Catatan & Keterbatasan
+## Membuat Admin Pertama (Bootstrap)
 
-- Autentikasi JWT belum diimplementasi; endpoint auth akan hadir di sprint berikutnya.
-- Integrasi gateway QRIS nyata belum ada; interface adapter sudah disiapkan.
-- WebSocket untuk KDS real-time belum diimplementasi.
-- Migrasi menggunakan `docker-entrypoint-initdb.d` yang hanya berjalan sekali saat volume baru; untuk incremental migration di produksi gunakan `golang-migrate` atau `goose`.
+Setelah migrasi database berhasil dijalankan, buat akun admin pertama menggunakan perintah CLI berikut:
+
+```bash
+cd apps/api
+
+# Pastikan environment database sudah di-set
+export DB_HOST=localhost DB_PORT=3306
+export DB_USER=resto DB_PASSWORD=<password_db> DB_NAME=resto_db
+
+go run ./cmd/seed \
+  --org  "Nama Restoran Anda" \
+  --slug "nama-restoran" \
+  --name "Admin Utama" \
+  --email "admin@restoran.com" \
+  --pass  "password_kuat_anda"
+```
+
+> **Keamanan:**
+> - Jangan commit password ke source control.
+> - Hapus password dari shell history setelah selesai:
+>   ```bash
+>   history -d $(history 1 | awk '{print $1}')
+>   ```
+> - Password di-hash menggunakan bcrypt sebelum disimpan — tidak ada plaintext di database.
+> - Perintah `seed` hanya untuk bootstrap awal; nonaktifkan atau hapus setelah admin dibuat.
 
 ---
 
-## Dokumentasi
 
 - [PRD — Product Requirements Document](docs/PRD_Restaurant_Multi_Cabang_QRIS.md)
+- [PROGRESS — Catatan Progres Pengembangan](docs/PROGRESS.md)
 
+---
+
+## Catatan
+
+- Integrasi gateway QRIS nyata belum ada; akan diimplementasi pada Fase 4.
+- WebSocket untuk KDS real-time belum diimplementasi; direncanakan pada Fase 5.
+- Migrasi menggunakan `docker-entrypoint-initdb.d` yang hanya berjalan sekali saat volume baru; untuk incremental migration di produksi gunakan `golang-migrate` atau `goose`.
