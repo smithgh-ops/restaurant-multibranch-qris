@@ -13,5 +13,6 @@ func RegisterRoutes(v1 *gin.RouterGroup, h *Handler, authMiddleware gin.HandlerF
 		auth.POST("/refresh", h.RefreshHandler)
 		auth.POST("/logout", h.Logout)
 		auth.GET("/me", authMiddleware, h.Me)
+		auth.PATCH("/me/password", authMiddleware, h.ChangePassword)
 	}
 }

@@ -137,6 +137,28 @@ func HashPassword(plain string) (string, error) {
 	return string(h), nil
 }
 
+// ErrWrongPassword is returned when the current password does not match.
+var ErrWrongPassword = errors.New("current password is incorrect")
+
+// ChangePassword validates the current password and updates to a new one.
+func (s *Service) ChangePassword(ctx context.Context, userID uint64, currentPassword, newPassword string) error {
+	hash, err := s.repo.FindPasswordHashByID(ctx, userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("user not found")
+	}
+	if err != nil {
+		return fmt.Errorf("change password: %w", err)
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(currentPassword)); err != nil {
+		return ErrWrongPassword
+	}
+	newHash, err := HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("change password: hash: %w", err)
+	}
+	return s.repo.UpdatePassword(ctx, userID, newHash)
+}
+
 // issueTokenPair generates a fresh access + refresh token pair and persists the refresh token.
 func (s *Service) issueTokenPair(ctx context.Context, user *User) (*TokenPair, error) {
 	access, err := GenerateAccessToken(

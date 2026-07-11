@@ -20,6 +20,7 @@ import (
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/report"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/selforder"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/table"
+	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/user"
 )
 
 // New creates and returns the root Gin engine with all routes registered.
@@ -83,6 +84,10 @@ func New(cfg *config.Config, db *sql.DB) *gin.Engine {
 	selforderRepo := selforder.NewRepository(db)
 	selforderHandler := selforder.NewHandler(selforderRepo)
 
+	// User management handler
+	userRepo := user.NewRepository(db)
+	userHandler := user.NewHandler(userRepo)
+
 	// API v1 group
 	v1 := r.Group("/api/v1")
 	{
@@ -98,6 +103,7 @@ func New(cfg *config.Config, db *sql.DB) *gin.Engine {
 		report.RegisterRoutes(v1, reportHandler, authMW)
 		payment.RegisterRoutes(v1, paymentHandler, authMW)
 		selforder.RegisterRoutes(v1, selforderHandler, authMW)
+		user.RegisterRoutes(v1, userHandler, authMW)
 	}
 
 	return r

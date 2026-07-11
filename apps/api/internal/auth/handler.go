@@ -96,3 +96,28 @@ func (h *Handler) Me(c *gin.Context) {
 
 	c.JSON(http.StatusOK, me)
 }
+
+// ChangePassword handles PATCH /api/v1/auth/me/password (requires authentication).
+func (h *Handler) ChangePassword(c *gin.Context) {
+	userID, ok := c.Get("user_id")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "tidak terautentikasi"})
+		return
+	}
+
+	var req ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "data tidak valid: " + err.Error()})
+		return
+	}
+
+	if err := h.svc.ChangePassword(c.Request.Context(), userID.(uint64), req.CurrentPassword, req.NewPassword); errors.Is(err, ErrWrongPassword) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "password saat ini tidak sesuai"})
+		return
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "password berhasil diubah"})
+}

@@ -36,6 +36,7 @@
 | **Fase 5** | Kitchen Display System (KDS) real-time                     | ✅ Selesai      |
 | **Fase 6** | Laporan & analitik                                         | ✅ Selesai      |
 | **Fase 7** | Self-order QR meja, gambar menu, adapter gateway           | ✅ Selesai      |
+| **Fase 8** | Manajemen pengguna & pengaturan profil                     | ✅ Selesai      |
 
 ---
 
@@ -390,6 +391,60 @@ go run ./cmd/seed \
 # pada shell yang mendukung HISTCONTROL=ignorespace, atau hapus entri terakhir
 # segera setelah selesai dengan `history -d -1`).
 ```
+
+---
+
+## Fase 8 — Manajemen Pengguna & Pengaturan Profil ✅
+
+**Branch:** `copilot/implement-phase-2-authentication-role-management`
+
+### Backend (Go + Gin)
+
+#### Manajemen Pengguna (`internal/user/`)
+
+- [x] `GET /api/v1/roles` — daftar semua role yang tersedia
+- [x] `GET /api/v1/users` — daftar pengguna dalam organisasi (filter: `branch_id`)
+- [x] `POST /api/v1/users` — tambah pengguna baru + assign role (org_admin/super_admin only)
+- [x] `GET /api/v1/users/:id` — detail pengguna
+- [x] `PATCH /api/v1/users/:id` — update nama, email, status aktif (org_admin/super_admin only)
+- [x] `DELETE /api/v1/users/:id` — nonaktifkan pengguna / soft delete (org_admin/super_admin only)
+- [x] `PUT /api/v1/users/:id/roles` — ganti seluruh role assignment pengguna (org_admin/super_admin only)
+- [x] Guard berbasis DB: `IsOrgAdmin()` memvalidasi caller punya role `org_admin` atau `super_admin`
+
+#### Auth — Ganti Password
+
+- [x] `PATCH /api/v1/auth/me/password` — ganti password diri sendiri, validasi password lama dulu
+- [x] `ErrWrongPassword` — error khusus untuk password lama tidak cocok
+
+#### Organisasi — Update Profil
+
+- [x] `PATCH /api/v1/organization` — update nama/slug organisasi
+
+### Frontend (SvelteKit)
+
+#### Halaman Pengguna (`/dashboard/users`)
+
+- [x] Tabel pengguna: nama, email, role + cabang, status aktif/nonaktif
+- [x] Form tambah pengguna (nama, email, password sementara, pilih role + cabang)
+- [x] Form edit pengguna (nama, email, toggle status aktif)
+- [x] Form ubah role pengguna
+- [x] Tombol nonaktifkan pengguna (dengan konfirmasi)
+- [x] Menu sidebar "👥 Pengguna" ditambahkan
+
+#### Halaman Pengaturan (`/dashboard/settings`)
+
+- [x] Kartu info sesi aktif (nama, email, role)
+- [x] Form update profil organisasi (nama, slug)
+- [x] Form ganti password (validasi password lama, konfirmasi password baru)
+- [x] Feedback error/sukses per section (profil & password terpisah)
+
+#### API Client (`src/lib/api/client.ts`)
+
+- [x] Type: `UserWithRoles`, `Role`, `RoleAssignment`, `CreateUserPayload`, `UpdateUserPayload`, `UpdateRolesPayload`
+- [x] Fungsi: `api.users.*` (list, get, create, update, deactivate, setRoles)
+- [x] Fungsi: `api.roles(token)` — daftar role tersedia
+- [x] Fungsi: `api.updateOrganization(token, payload)` — update profil organisasi
+- [x] Fungsi: `api.changePassword(token, payload)` — ganti password
 
 ---
 

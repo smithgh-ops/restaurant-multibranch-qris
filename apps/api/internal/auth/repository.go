@@ -49,6 +49,22 @@ func (r *Repository) FindUserByID(ctx context.Context, id uint64) (*User, error)
 	return u, nil
 }
 
+// FindPasswordHashByID returns only the password_hash for the given user id.
+func (r *Repository) FindPasswordHashByID(ctx context.Context, id uint64) (string, error) {
+	var hash string
+	err := r.db.QueryRowContext(ctx, `SELECT password_hash FROM users WHERE id = ? LIMIT 1`, id).Scan(&hash)
+	return hash, err
+}
+
+// UpdatePassword sets a new password_hash for the given user.
+func (r *Repository) UpdatePassword(ctx context.Context, id uint64, newHash string) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?`,
+		newHash, id,
+	)
+	return err
+}
+
 // GetUserRoles returns all role assignments for a user.
 func (r *Repository) GetUserRoles(ctx context.Context, userID uint64) ([]UserRole, error) {
 	const q = `

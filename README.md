@@ -124,6 +124,7 @@ Untuk lingkungan produksi, disarankan menggunakan alat migrasi seperti [golang-m
 │   │   │   ├── branch/             # CRUD cabang
 │   │   │   ├── menu/               # Kategori, item, setting per-cabang
 │   │   │   ├── organization/       # Data organisasi
+│   │   │   ├── user/               # Manajemen pengguna & role
 │   │   │   ├── config/             # Konfigurasi dari env vars
 │   │   │   ├── database/           # Koneksi MySQL & Redis
 │   │   │   ├── handler/            # HTTP handler (health, info)
@@ -194,6 +195,15 @@ Untuk lingkungan produksi, disarankan menggunakan alat migrasi seperti [golang-m
 | GET    | `/api/v1/branches/:branch_id/tables/:table_id/qr-token` | JWT | Lihat token QR aktif per meja |
 | GET    | `/api/v1/public/table/:token`              | —    | Menu publik by QR token (self-order) |
 | POST   | `/api/v1/public/table/:token/orders`       | —    | Buat pesanan self-order (tanpa login) |
+| GET    | `/api/v1/roles`                            | JWT  | Daftar role yang tersedia             |
+| GET    | `/api/v1/users`                            | JWT  | Daftar pengguna dalam organisasi      |
+| POST   | `/api/v1/users`                            | JWT  | Tambah pengguna baru (org_admin)      |
+| GET    | `/api/v1/users/:id`                        | JWT  | Detail pengguna                       |
+| PATCH  | `/api/v1/users/:id`                        | JWT  | Update nama/email/status (org_admin)  |
+| DELETE | `/api/v1/users/:id`                        | JWT  | Nonaktifkan pengguna (org_admin)      |
+| PUT    | `/api/v1/users/:id/roles`                  | JWT  | Ganti role pengguna (org_admin)       |
+| PATCH  | `/api/v1/auth/me/password`                 | JWT  | Ganti password diri sendiri           |
+| PATCH  | `/api/v1/organization`                     | JWT  | Update nama/slug organisasi           |
 
 ---
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 // Repository handles database operations for organizations.
@@ -35,4 +36,36 @@ func (r *Repository) FindByID(ctx context.Context, id uint64) (*Organization, er
 		org.LogoURL = &logoURL.String
 	}
 	return org, nil
+}
+
+// Update applies partial updates (name, slug) to an organization.
+func (r *Repository) Update(ctx context.Context, id uint64, name, slug *string) (*Organization, error) {
+	setClauses := []string{}
+	args := []any{}
+
+	if name != nil {
+		setClauses = append(setClauses, "name = ?")
+		args = append(args, *name)
+	}
+	if slug != nil {
+		setClauses = append(setClauses, "slug = ?")
+		args = append(args, *slug)
+	}
+	if len(setClauses) == 0 {
+		return r.FindByID(ctx, id)
+	}
+	setClauses = append(setClauses, "updated_at = NOW()")
+	args = append(args, id)
+
+	q := fmt.Sprintf("UPDATE organizations SET %s WHERE id = ?",
+		strings.Join(setClauses, ", "))
+	res, err := r.db.ExecContext(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("organization update: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return nil, sql.ErrNoRows
+	}
+	return r.FindByID(ctx, id)
 }

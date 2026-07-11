@@ -13,6 +13,7 @@
 		{ href: '/dashboard/branches', label: 'Cabang', icon: '🏪' },
 		{ href: '/dashboard/tables', label: 'Meja & QR', icon: '🪑' },
 		{ href: '/dashboard/reports', label: 'Laporan', icon: '📊' },
+		{ href: '/dashboard/users', label: 'Pengguna', icon: '👥' },
 		{ href: '/dashboard/settings', label: 'Pengaturan', icon: '⚙️' }
 	];
 

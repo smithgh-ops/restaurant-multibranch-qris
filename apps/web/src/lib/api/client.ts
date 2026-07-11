@@ -272,6 +272,47 @@ export interface TopItem {
 	total_revenue: string;
 }
 
+// ── Users ─────────────────────────────────────────────────────────────────────
+
+export interface UserWithRoles {
+	id: number;
+	organization_id: number;
+	name: string;
+	email: string;
+	is_active: boolean;
+	created_at: string;
+	updated_at: string;
+	roles: UserRole[];
+}
+
+export interface Role {
+	id: number;
+	name: string;
+	description?: string;
+}
+
+export interface RoleAssignment {
+	role_id: number;
+	branch_id?: number;
+}
+
+export interface CreateUserPayload {
+	name: string;
+	email: string;
+	password: string;
+	roles?: RoleAssignment[];
+}
+
+export interface UpdateUserPayload {
+	name?: string;
+	email?: string;
+	is_active?: boolean;
+}
+
+export interface UpdateRolesPayload {
+	roles: RoleAssignment[];
+}
+
 // ── Self-order (public QR table) ──────────────────────────────────────────────
 
 export interface QRTableToken {
@@ -729,5 +770,71 @@ export const api = {
 			const qs = params.toString() ? '?' + params.toString() : '';
 			return `${API_BASE_URL}/api/v1/reports/sales/export${qs}`;
 		}
+	},
+
+	// Users
+	users: {
+		list(token: string, filters?: { branch_id?: number }): Promise<ApiResponse<{ data: UserWithRoles[] }>> {
+			const params = new URLSearchParams();
+			if (filters?.branch_id) params.set('branch_id', String(filters.branch_id));
+			const qs = params.toString() ? '?' + params.toString() : '';
+			return request<{ data: UserWithRoles[] }>(`/api/v1/users${qs}`, { token });
+		},
+		get(token: string, id: number): Promise<ApiResponse<UserWithRoles>> {
+			return request<UserWithRoles>(`/api/v1/users/${id}`, { token });
+		},
+		create(token: string, payload: CreateUserPayload): Promise<ApiResponse<UserWithRoles>> {
+			return request<UserWithRoles>('/api/v1/users', {
+				method: 'POST',
+				token,
+				body: JSON.stringify(payload)
+			});
+		},
+		update(token: string, id: number, payload: UpdateUserPayload): Promise<ApiResponse<UserWithRoles>> {
+			return request<UserWithRoles>(`/api/v1/users/${id}`, {
+				method: 'PATCH',
+				token,
+				body: JSON.stringify(payload)
+			});
+		},
+		deactivate(token: string, id: number): Promise<ApiResponse<{ message: string }>> {
+			return request(`/api/v1/users/${id}`, { method: 'DELETE', token });
+		},
+		setRoles(token: string, id: number, payload: UpdateRolesPayload): Promise<ApiResponse<UserWithRoles>> {
+			return request<UserWithRoles>(`/api/v1/users/${id}/roles`, {
+				method: 'PUT',
+				token,
+				body: JSON.stringify(payload)
+			});
+		}
+	},
+
+	// Roles
+	roles(token: string): Promise<ApiResponse<{ data: Role[] }>> {
+		return request<{ data: Role[] }>('/api/v1/roles', { token });
+	},
+
+	// Organization update
+	updateOrganization(
+		token: string,
+		payload: { name?: string; slug?: string }
+	): Promise<ApiResponse<Organization>> {
+		return request<Organization>('/api/v1/organization', {
+			method: 'PATCH',
+			token,
+			body: JSON.stringify(payload)
+		});
+	},
+
+	// Change password
+	changePassword(
+		token: string,
+		payload: { current_password: string; new_password: string }
+	): Promise<ApiResponse<{ message: string }>> {
+		return request('/api/v1/auth/me/password', {
+			method: 'PATCH',
+			token,
+			body: JSON.stringify(payload)
+		});
 	}
 };

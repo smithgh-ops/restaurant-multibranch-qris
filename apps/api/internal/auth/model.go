@@ -50,3 +50,9 @@ type MeResponse struct {
 	Email          string     `json:"email"`
 	Roles          []UserRole `json:"roles"`
 }
+
+// ChangePasswordRequest is the payload for PATCH /auth/me/password.
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" binding:"required"`
+	NewPassword     string `json:"new_password"     binding:"required,min=6"`
+}
