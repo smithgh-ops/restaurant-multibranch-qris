@@ -437,8 +437,11 @@ export const api = {
 
 	// Branches
 	branches: {
-		list(token: string): Promise<ApiResponse<{ data: Branch[] }>> {
-			return request<{ data: Branch[] }>('/api/v1/branches', { token });
+		list(token: string, filters?: { active?: boolean }): Promise<ApiResponse<{ data: Branch[] }>> {
+			const params = new URLSearchParams();
+			if (filters?.active !== undefined) params.set('active', String(filters.active));
+			const qs = params.toString() ? `?${params.toString()}` : '';
+			return request<{ data: Branch[] }>(`/api/v1/branches${qs}`, { token });
 		},
 		get(token: string, id: number): Promise<ApiResponse<Branch>> {
 			return request<Branch>(`/api/v1/branches/${id}`, { token });

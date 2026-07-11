@@ -36,13 +36,18 @@ func scanBranch(row interface{ Scan(...any) error }) (*Branch, error) {
 }
 
 // List returns all branches for an organization.
-func (r *Repository) List(ctx context.Context, orgID uint64) ([]Branch, error) {
-	const q = `
+func (r *Repository) List(ctx context.Context, orgID uint64, active *bool) ([]Branch, error) {
+	query := `
 		SELECT id, organization_id, name, slug, address, phone, is_active, created_at, updated_at
 		FROM branches
-		WHERE organization_id = ?
-		ORDER BY name`
-	rows, err := r.db.QueryContext(ctx, q, orgID)
+		WHERE organization_id = ?`
+	args := []any{orgID}
+	if active != nil {
+		query += " AND is_active = ?"
+		args = append(args, *active)
+	}
+	query += " ORDER BY name"
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("branch list: %w", err)
 	}

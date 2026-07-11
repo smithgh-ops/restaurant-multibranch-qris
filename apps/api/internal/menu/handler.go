@@ -111,19 +111,15 @@ func (h *Handler) ListItems(c *gin.Context) {
 		return
 	}
 
-	var categoryID *uint64
-	if raw := c.Query("category_id"); raw != "" {
-		cid, err := strconv.ParseUint(raw, 10, 64)
-		if err == nil {
-			categoryID = &cid
-		}
+	categoryID, err := parseOptionalUint64Query(c.Query("category_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "parameter category_id tidak valid"})
+		return
 	}
-	var branchID *uint64
-	if raw := c.Query("branch_id"); raw != "" {
-		bid, err := strconv.ParseUint(raw, 10, 64)
-		if err == nil {
-			branchID = &bid
-		}
+	branchID, err := parseOptionalUint64Query(c.Query("branch_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "parameter branch_id tidak valid"})
+		return
 	}
 	activeOnly := c.Query("active") == "1" || c.Query("active") == "true"
 
@@ -412,4 +408,15 @@ func RegisterRoutes(v1 *gin.RouterGroup, h *Handler, authMiddleware gin.HandlerF
 		menu.GET("/items/:id/branches", h.GetBranchSettings)
 		menu.PUT("/items/:id/branches/:branch_id", h.UpsertBranchSetting)
 	}
+}
+
+func parseOptionalUint64Query(raw string) (*uint64, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	id, err := strconv.ParseUint(raw, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &id, nil
 }

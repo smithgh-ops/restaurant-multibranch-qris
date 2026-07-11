@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import type { PageData, ActionData } from './$types';
 	import type { Branch } from '$lib/api/client';
 
@@ -7,6 +8,7 @@
 
 	let showCreateForm = $state(false);
 	let editingBranch = $state<Branch | null>(null);
+	let selectedActiveFilter = $state(data.activeFilter);
 
 	function slugify(name: string) {
 		return name
@@ -29,15 +31,35 @@
 			<h2 class="text-2xl font-bold text-gray-800">Manajemen Cabang</h2>
 			<p class="mt-1 text-gray-500 text-sm">Kelola cabang restoran Anda.</p>
 		</div>
-		<button
-			onclick={() => {
-				showCreateForm = !showCreateForm;
-				editingBranch = null;
-			}}
-			class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition-colors"
-		>
-			{showCreateForm ? 'Batal' : '+ Tambah Cabang'}
-		</button>
+		<div class="flex items-center gap-3">
+			<select
+				bind:value={selectedActiveFilter}
+				onchange={() => {
+					const params = new URLSearchParams(window.location.search);
+					if (selectedActiveFilter === 'all') {
+						params.delete('active');
+					} else {
+						params.set('active', selectedActiveFilter);
+					}
+					const query = params.toString();
+					goto(query ? `?${query}` : '?', { invalidateAll: true });
+				}}
+				class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+			>
+				<option value="all">Semua Status</option>
+				<option value="true">Aktif</option>
+				<option value="false">Nonaktif</option>
+			</select>
+			<button
+				onclick={() => {
+					showCreateForm = !showCreateForm;
+					editingBranch = null;
+				}}
+				class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition-colors"
+			>
+				{showCreateForm ? 'Batal' : '+ Tambah Cabang'}
+			</button>
+		</div>
 	</div>
 
 	<!-- Feedback messages -->

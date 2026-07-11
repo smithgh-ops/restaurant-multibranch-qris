@@ -2,15 +2,19 @@ import type { PageServerLoad, Actions } from './$types';
 import { redirect, fail } from '@sveltejs/kit';
 import { api } from '$lib/api/client';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user || !locals.accessToken) {
 		throw redirect(302, '/');
 	}
 
-	const res = await api.branches.list(locals.accessToken);
+	const activeQuery = url.searchParams.get('active');
+	const activeFilter =
+		activeQuery === 'true' ? true : activeQuery === 'false' ? false : undefined;
+	const res = await api.branches.list(locals.accessToken, { active: activeFilter });
 	return {
 		branches: res.data?.data ?? [],
-		error: res.error
+		error: res.error,
+		activeFilter: activeQuery === 'true' || activeQuery === 'false' ? activeQuery : 'all'
 	};
 };
 

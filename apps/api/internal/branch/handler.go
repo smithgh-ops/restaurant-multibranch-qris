@@ -30,7 +30,13 @@ func (h *Handler) List(c *gin.Context) {
 		return
 	}
 
-	branches, err := h.repo.List(c.Request.Context(), orgID)
+	activeFilter, err := parseOptionalActiveParam(c.Query("active"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "parameter active tidak valid"})
+		return
+	}
+
+	branches, err := h.repo.List(c.Request.Context(), orgID, activeFilter)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
@@ -144,4 +150,15 @@ func RegisterRoutes(v1 *gin.RouterGroup, h *Handler, authMiddleware gin.HandlerF
 // isDuplicateEntry checks if the error is a MySQL duplicate key error.
 func isDuplicateEntry(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "1062")
+}
+
+func parseOptionalActiveParam(raw string) (*bool, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	active, err := strconv.ParseBool(raw)
+	if err != nil {
+		return nil, err
+	}
+	return &active, nil
 }
