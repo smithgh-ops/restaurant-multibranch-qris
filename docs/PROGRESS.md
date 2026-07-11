@@ -309,18 +309,6 @@ Setiap provider memiliki format invoice, signature webhook, dan mekanisme expire
 
 ---
 
-## Fase 6 — Laporan & Analitik 🔜
-
-**Estimasi scope:**
-
-- [ ] Laporan penjualan harian/mingguan/bulanan per cabang
-- [ ] Laporan per kasir dan per shift
-- [ ] Laporan metode pembayaran (tunai vs QRIS)
-- [ ] Produk terlaris per kategori
-- [ ] Ekspor laporan ke CSV/PDF
-
----
-
 ## Cara Menjalankan Lokal
 
 ```bash
