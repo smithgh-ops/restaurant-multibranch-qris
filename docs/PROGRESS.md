@@ -321,7 +321,9 @@ go run ./cmd/seed \
   --name "Admin Utama" \
   --email "admin@restoran.com" \
   --pass  "password_kuat_anda"
-# Hapus password dari shell history: history -d $(history 1 | awk '{print $1}')
+# Hindari menyimpan password di shell history (mis. awali command dengan spasi
+# pada shell yang mendukung HISTCONTROL=ignorespace, atau hapus entri terakhir
+# segera setelah selesai dengan `history -d -1`).
 ```
 
 ---
