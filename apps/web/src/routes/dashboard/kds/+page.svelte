@@ -23,6 +23,7 @@
 	let stationId = $state<number | null>(null);
 	let highlightedIds = $state<number[]>([]);
 	let isConnected = $state(false);
+	let audioContext = $state<AudioContext | null>(null);
 	let socket: WebSocket | null = null;
 	let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -110,18 +111,17 @@
 				window.AudioContext ||
 				(window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
 			if (!AudioContextCtor) return;
-			const context = new AudioContextCtor();
-			const oscillator = context.createOscillator();
-			const gain = context.createGain();
+			audioContext ??= new AudioContextCtor();
+			const oscillator = audioContext.createOscillator();
+			const gain = audioContext.createGain();
 			oscillator.type = 'sine';
 			oscillator.frequency.value = 880;
 			gain.gain.value = 0.05;
 			oscillator.connect(gain);
-			gain.connect(context.destination);
+			gain.connect(audioContext.destination);
 			oscillator.start();
 			setTimeout(() => {
 				oscillator.stop();
-				void context.close();
 			}, 160);
 		} catch {
 			// noop
@@ -143,6 +143,7 @@
 	onDestroy(() => {
 		if (reconnectTimer) clearTimeout(reconnectTimer);
 		socket?.close();
+		void audioContext?.close();
 	});
 
 	function formatTime(value?: string) {

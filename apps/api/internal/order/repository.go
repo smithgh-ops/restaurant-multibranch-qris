@@ -244,8 +244,8 @@ func (r *Repository) Create(ctx context.Context, orgID uint64, req *CreateOrderR
 		})
 	}
 
-	// Tax and service charge are fixed at 0 for now.
-	// Per-branch tax/service-charge configuration is planned for Phase 6 (Laporan & Analitik).
+	// Tax and service charge are fixed at 0 until branch-level pricing rules are introduced.
+	// For now, new orders only store the menu subtotal as the final amount.
 	taxAmount := 0.0
 	serviceCharge := 0.0
 	totalAmount := subtotal + taxAmount + serviceCharge
