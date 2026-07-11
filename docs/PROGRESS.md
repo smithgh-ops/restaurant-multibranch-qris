@@ -34,7 +34,7 @@
 | **Fase 3** | POS / manajemen pesanan                                    | ✅ Selesai      |
 | **Fase 4** | Integrasi QRIS gateway + webhook                           | 🔜 Direncanakan |
 | **Fase 5** | Kitchen Display System (KDS) real-time                     | ✅ Selesai      |
-| **Fase 6** | Laporan & analitik                                         | 🔜 Direncanakan |
+| **Fase 6** | Laporan & analitik                                         | ✅ Selesai      |
 
 ---
 
@@ -236,6 +236,27 @@
 - [x] Type: `DiningArea`, `RestaurantTable`, `Order`, `OrderItem`, `OrderStatus`, `OrderType`, `CreateOrderPayload`
 - [x] Fungsi: `api.tables.*` (diningAreas, list, create, update, createDiningArea)
 - [x] Fungsi: `api.orders.*` (list, get, create, updateStatus)
+
+---
+
+## Fase 6 — Laporan & Analitik ✅
+
+### Backend (Go + Gin)
+
+- [x] Package `internal/report/` — model, repository, handler
+- [x] `GET /api/v1/reports/sales` — ringkasan penjualan (total_revenue, order_count, avg_order_value) + rincian harian; filter: `branch_id`, `date_from`, `date_to`
+- [x] `GET /api/v1/reports/top-items` — produk terlaris berdasarkan qty, filter dan limit yang sama
+- [x] `GET /api/v1/reports/sales/export` — ekspor penjualan harian ke CSV (UTF-8 BOM agar kompatibel dengan Excel)
+- [x] Semua endpoint hanya menghitung pesanan berstatus `completed`
+
+### Frontend (SvelteKit)
+
+- [x] Halaman `/dashboard/reports` dengan filter cabang dan rentang tanggal
+- [x] Tiga kartu ringkasan: Total Pendapatan, Jumlah Pesanan, Rata-rata Nilai Pesanan
+- [x] Tabel penjualan harian
+- [x] Tabel produk terlaris (top 10)
+- [x] Tombol ekspor CSV
+- [x] Status modul di dashboard diperbarui menjadi "Aktif"
 
 ---
 

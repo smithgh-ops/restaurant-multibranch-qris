@@ -44,7 +44,7 @@
 			icon: '📊',
 			description: 'Laporan penjualan, performa cabang, dan produk terlaris.',
 			href: '/dashboard/reports',
-			status: 'Segera Hadir'
+			status: 'Aktif'
 		},
 		{
 			title: 'Pembayaran QRIS',

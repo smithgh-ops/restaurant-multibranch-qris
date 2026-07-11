@@ -226,6 +226,32 @@ export interface KitchenTicket {
 	updated_at: string;
 }
 
+// ── Reports ───────────────────────────────────────────────────────────────────
+
+export interface SalesSummary {
+	total_revenue: string;
+	order_count: number;
+	avg_order_value: string;
+}
+
+export interface DailySales {
+	date: string;
+	revenue: string;
+	order_count: number;
+}
+
+export interface SalesReport {
+	summary: SalesSummary;
+	daily: DailySales[];
+}
+
+export interface TopItem {
+	menu_item_id: number;
+	item_name: string;
+	total_qty: number;
+	total_revenue: string;
+}
+
 // ── HTTP helper ───────────────────────────────────────────────────────────────
 
 async function request<T>(
@@ -545,6 +571,45 @@ export const api = {
 					}
 				);
 			}
+		}
+	},
+
+	// Reports
+	reports: {
+		sales(
+			token: string,
+			filters?: { branch_id?: number; date_from?: string; date_to?: string }
+		): Promise<ApiResponse<SalesReport>> {
+			const params = new URLSearchParams();
+			if (filters?.branch_id) params.set('branch_id', String(filters.branch_id));
+			if (filters?.date_from) params.set('date_from', filters.date_from);
+			if (filters?.date_to) params.set('date_to', filters.date_to);
+			const qs = params.toString() ? '?' + params.toString() : '';
+			return request<SalesReport>(`/api/v1/reports/sales${qs}`, { token });
+		},
+		topItems(
+			token: string,
+			filters?: { branch_id?: number; date_from?: string; date_to?: string; limit?: number }
+		): Promise<ApiResponse<{ data: TopItem[] }>> {
+			const params = new URLSearchParams();
+			if (filters?.branch_id) params.set('branch_id', String(filters.branch_id));
+			if (filters?.date_from) params.set('date_from', filters.date_from);
+			if (filters?.date_to) params.set('date_to', filters.date_to);
+			if (filters?.limit) params.set('limit', String(filters.limit));
+			const qs = params.toString() ? '?' + params.toString() : '';
+			return request<{ data: TopItem[] }>(`/api/v1/reports/top-items${qs}`, { token });
+		},
+		exportURL(filters?: {
+			branch_id?: number;
+			date_from?: string;
+			date_to?: string;
+		}): string {
+			const params = new URLSearchParams();
+			if (filters?.branch_id) params.set('branch_id', String(filters.branch_id));
+			if (filters?.date_from) params.set('date_from', filters.date_from);
+			if (filters?.date_to) params.set('date_to', filters.date_to);
+			const qs = params.toString() ? '?' + params.toString() : '';
+			return `${API_BASE_URL}/api/v1/reports/sales/export${qs}`;
 		}
 	}
 };

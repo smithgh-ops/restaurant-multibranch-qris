@@ -16,6 +16,7 @@ import (
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/middleware"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/order"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/organization"
+	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/report"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/table"
 )
 
@@ -68,6 +69,10 @@ func New(cfg *config.Config, db *sql.DB) *gin.Engine {
 	orderRepo := order.NewRepository(db).WithKDS(kdsRepo, kdsHub)
 	orderHandler := order.NewHandler(orderRepo)
 
+	// Report handler
+	reportRepo := report.NewRepository(db)
+	reportHandler := report.NewHandler(reportRepo)
+
 	// API v1 group
 	v1 := r.Group("/api/v1")
 	{
@@ -80,6 +85,7 @@ func New(cfg *config.Config, db *sql.DB) *gin.Engine {
 		table.RegisterRoutes(v1, tableHandler, authMW)
 		kds.RegisterRoutes(v1, kdsHandler, authMW)
 		order.RegisterRoutes(v1, orderHandler, authMW)
+		report.RegisterRoutes(v1, reportHandler, authMW)
 	}
 
 	return r

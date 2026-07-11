@@ -182,6 +182,9 @@ Untuk lingkungan produksi, disarankan menggunakan alat migrasi seperti [golang-m
 | PATCH  | `/api/v1/menu/items/:id`          | JWT  | Update item                              |
 | GET    | `/api/v1/menu/items/:id/branches` | JWT  | Setting harga per-cabang                 |
 | PUT    | `/api/v1/menu/items/:id/branches/:branch_id` | JWT | Upsert setting per-cabang   |
+| GET    | `/api/v1/reports/sales`                   | JWT  | Ringkasan & rincian penjualan harian     |
+| GET    | `/api/v1/reports/top-items`               | JWT  | Produk terlaris (top-N)                  |
+| GET    | `/api/v1/reports/sales/export`            | JWT  | Ekspor penjualan harian ke CSV           |
 
 Endpoint selanjutnya (orders, payments, kitchen, reports) akan ditambahkan pada fase berikutnya.
 
