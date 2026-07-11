@@ -233,7 +233,8 @@ func (r *Repository) Create(ctx context.Context, orgID uint64, req *CreateOrderR
 		})
 	}
 
-	// Simple totals (no tax/service charge for now, can be configured per branch later)
+	// Tax and service charge are fixed at 0 for now.
+	// Per-branch tax/service-charge configuration is planned for Phase 6 (Laporan & Analitik).
 	taxAmount := 0.0
 	serviceCharge := 0.0
 	totalAmount := subtotal + taxAmount + serviceCharge
@@ -302,6 +303,9 @@ func (r *Repository) UpdateStatus(ctx context.Context, id, orgID uint64, status 
 }
 
 // generateOrderCode produces a unique order code like ORD-20240711-A1B2C3.
+// It retries up to 5 times to avoid the rare collision when two orders are
+// created simultaneously on the same date with the same 3-byte random suffix
+// (probability ≈ 1/16^6 per attempt ≈ negligible in practice).
 func (r *Repository) generateOrderCode(ctx context.Context) (string, error) {
 	datePart := time.Now().Format("20060102")
 	for range 5 {

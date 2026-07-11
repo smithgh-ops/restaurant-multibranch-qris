@@ -7,7 +7,7 @@
 
 	// ── State ─────────────────────────────────────────────────────────────────
 	let selectedBranchId = $state<number | null>(null);
-	let selectedOrderType = $state<'dine_in' | 'takeaway'>('dine_in');
+	let selectedOrderType = $state<'dine_in' | 'takeaway' | 'delivery'>('dine_in');
 	let selectedTableId = $state<number | null>(null);
 	let tables = $state<RestaurantTable[]>([]);
 	let loadingTables = $state(false);
@@ -66,6 +66,13 @@
 				quantity: 1,
 				notes: ''
 			});
+		}
+	}
+
+	function incrementCartItem(menuItemId: number) {
+		const idx = cart.findIndex((c) => c.menuItemId === menuItemId);
+		if (idx >= 0) {
+			cart[idx].quantity += 1;
 		}
 	}
 
@@ -162,6 +169,7 @@
 					>
 						<option value="dine_in">Makan di Tempat</option>
 						<option value="takeaway">Dibawa Pulang</option>
+						<option value="delivery">Delivery</option>
 					</select>
 				</div>
 
@@ -276,7 +284,7 @@
 									>−</button>
 									<span class="w-5 text-center text-sm font-semibold">{item.quantity}</span>
 									<button
-										onclick={() => addToCart({ id: item.menuItemId, name: item.name, base_price: String(item.unitPrice) } as any)}
+										onclick={() => incrementCartItem(item.menuItemId)}
 										class="w-6 h-6 rounded-full bg-gray-100 text-gray-600 hover:bg-orange-100 hover:text-orange-600 text-sm font-bold flex items-center justify-center"
 									>+</button>
 								</div>
