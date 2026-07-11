@@ -57,7 +57,18 @@ export const actions: Actions = {
 		});
 
 		if (res.error) return fail(400, { error: res.error });
-		return { success: true, orderCode: res.data?.order_code };
+		const orderId = res.data?.id;
+		if (!orderId) return fail(400, { error: 'Gagal membuat pesanan.' });
+
+		const invoiceRes = await api.payments.createInvoice(locals.accessToken, orderId);
+		if (invoiceRes.error) {
+			return {
+				success: true,
+				orderCode: res.data?.order_code,
+				paymentWarning: invoiceRes.error
+			};
+		}
+		return { success: true, orderCode: res.data?.order_code, payment: invoiceRes.data };
 	},
 
 	loadTables: async ({ locals, request }) => {

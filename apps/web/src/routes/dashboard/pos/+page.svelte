@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { PageData, ActionData } from './$types';
-	import type { MenuItem, RestaurantTable } from '$lib/api/client';
+	import type { MenuItem, Payment, RestaurantTable } from '$lib/api/client';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -14,6 +14,8 @@
 	let orderNotes = $state('');
 	let selectedCategoryId = $state<number | null>(null);
 	let orderSuccess = $state<string | null>(null);
+	let paymentInfo = $state<Payment | null>(null);
+	let paymentWarning = $state<string | null>(null);
 
 	interface CartItem {
 		menuItemId: number;
@@ -92,6 +94,8 @@
 		selectedTableId = null;
 		orderNotes = '';
 		orderSuccess = null;
+		paymentInfo = null;
+		paymentWarning = null;
 	}
 
 	// ── Branch / table loading ────────────────────────────────────────────────
@@ -108,6 +112,8 @@
 		}
 		if (form && 'orderCode' in form && form.orderCode) {
 			orderSuccess = form.orderCode as string;
+			paymentInfo = ('payment' in form ? (form.payment as Payment) : null) ?? null;
+			paymentWarning = ('paymentWarning' in form ? (form.paymentWarning as string) : null) ?? null;
 			cart = [];
 			selectedTableId = null;
 			orderNotes = '';
@@ -131,6 +137,31 @@
 			<span>✅ Pesanan berhasil dibuat! Kode: <strong>{orderSuccess}</strong></span>
 			<button onclick={clearCart} class="text-green-700 hover:text-green-900 font-medium">Buat Pesanan Baru</button>
 		</div>
+		{#if paymentWarning}
+			<div class="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 text-sm">
+				⚠️ Pesanan tercatat, tetapi invoice QRIS belum dibuat: {paymentWarning}
+			</div>
+		{/if}
+		{#if paymentInfo}
+			<div class="mb-4 rounded-xl border border-orange-200 bg-orange-50 p-4">
+				<h3 class="text-sm font-semibold text-orange-700 mb-2">Pembayaran QRIS</h3>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+					<div class="space-y-1 text-sm text-gray-700">
+						<p>Kode invoice: <strong>{paymentInfo.gateway_invoice_id}</strong></p>
+						<p>Total: <strong>{formatPrice(paymentInfo.amount)}</strong></p>
+						<p>Status: <strong class="uppercase">{paymentInfo.status}</strong></p>
+						{#if paymentInfo.expiry_at}
+							<p>Kadaluarsa: <strong>{new Date(paymentInfo.expiry_at).toLocaleString('id-ID')}</strong></p>
+						{/if}
+					</div>
+					{#if paymentInfo.qr_code_url}
+						<img src={paymentInfo.qr_code_url} alt="QRIS Dinamis" class="w-48 h-48 rounded-lg border border-orange-200 bg-white p-2" />
+					{:else if paymentInfo.qr_string}
+						<pre class="text-xs bg-white border border-orange-200 rounded-lg p-2 overflow-x-auto">{paymentInfo.qr_string}</pre>
+					{/if}
+				</div>
+			</div>
+		{/if}
 	{/if}
 
 	<!-- Error banner -->

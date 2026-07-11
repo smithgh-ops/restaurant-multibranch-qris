@@ -1,0 +1,64 @@
+package payment
+
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
+	"io"
+)
+
+func deriveKey(secret string) []byte {
+	sum := sha256.Sum256([]byte(secret))
+	return sum[:]
+}
+
+func encryptString(key []byte, plain string) (string, error) {
+	if plain == "" {
+		return "", nil
+	}
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", fmt.Errorf("new cipher: %w", err)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", fmt.Errorf("new gcm: %w", err)
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", fmt.Errorf("generate nonce: %w", err)
+	}
+	ciphertext := gcm.Seal(nonce, nonce, []byte(plain), nil)
+	return base64.StdEncoding.EncodeToString(ciphertext), nil
+}
+
+func decryptString(key []byte, encoded string) (string, error) {
+	if encoded == "" {
+		return "", nil
+	}
+	raw, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", fmt.Errorf("decode encrypted value: %w", err)
+	}
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", fmt.Errorf("new cipher: %w", err)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", fmt.Errorf("new gcm: %w", err)
+	}
+	nonceSize := gcm.NonceSize()
+	if len(raw) < nonceSize {
+		return "", fmt.Errorf("invalid encrypted payload")
+	}
+	nonce, ciphertext := raw[:nonceSize], raw[nonceSize:]
+	plain, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return "", fmt.Errorf("decrypt value: %w", err)
+	}
+	return string(plain), nil
+}

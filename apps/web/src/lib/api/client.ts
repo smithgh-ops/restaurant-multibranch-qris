@@ -193,6 +193,26 @@ export interface CreateOrderPayload {
 	items: { menu_item_id: number; quantity: number; notes?: string }[];
 }
 
+// ── Payment ───────────────────────────────────────────────────────────────────
+
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'expired';
+
+export interface Payment {
+	id: number;
+	order_id: number;
+	gateway_config_id?: number;
+	gateway_invoice_id: string;
+	payment_method: string;
+	amount: string;
+	status: PaymentStatus;
+	paid_at?: string;
+	qr_code_url?: string;
+	qr_string?: string;
+	expiry_at?: string;
+	created_at: string;
+	updated_at: string;
+}
+
 // ── KDS ───────────────────────────────────────────────────────────────────────
 
 export type KitchenTicketStatus = 'queued' | 'in_progress' | 'done' | 'cancelled';
@@ -518,6 +538,21 @@ export const api = {
 				method: 'PATCH',
 				token,
 				body: JSON.stringify({ status })
+			});
+		}
+	},
+
+	// Payments
+	payments: {
+		createInvoice(
+			token: string,
+			orderId: number,
+			payload?: { expiry_minutes?: number }
+		): Promise<ApiResponse<Payment>> {
+			return request<Payment>(`/api/v1/orders/${orderId}/payments/qris-invoice`, {
+				method: 'POST',
+				token,
+				body: JSON.stringify(payload ?? {})
 			});
 		}
 	},
