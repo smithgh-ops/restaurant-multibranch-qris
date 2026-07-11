@@ -185,8 +185,11 @@ Untuk lingkungan produksi, disarankan menggunakan alat migrasi seperti [golang-m
 | GET    | `/api/v1/reports/sales`                   | JWT  | Ringkasan & rincian penjualan harian     |
 | GET    | `/api/v1/reports/top-items`               | JWT  | Produk terlaris (top-N)                  |
 | GET    | `/api/v1/reports/sales/export`            | JWT  | Ekspor penjualan harian ke CSV           |
-
-Endpoint selanjutnya (orders, payments, kitchen, reports) akan ditambahkan pada fase berikutnya.
+| GET    | `/api/v1/branches/:branch_id/payment-gateway-config` | JWT | Lihat konfigurasi gateway QRIS per-cabang |
+| PUT    | `/api/v1/branches/:branch_id/payment-gateway-config` | JWT | Simpan konfigurasi gateway QRIS per-cabang |
+| POST   | `/api/v1/orders/:id/payments/qris-invoice` | JWT | Buat/reuse invoice QRIS dinamis untuk order |
+| GET    | `/api/v1/payments/reconciliation`          | JWT  | Daftar transaksi QRIS untuk rekonsiliasi |
+| POST   | `/api/v1/payments/webhooks/qris`           | —    | Webhook status pembayaran QRIS (signature) |
 
 ---
 
@@ -237,6 +240,6 @@ go run ./cmd/seed \
 
 ## Catatan
 
-- Integrasi gateway QRIS nyata belum ada; akan diimplementasi pada Fase 4.
+- Integrasi QRIS saat ini menggunakan provider mock (`qris_mock`); adapter provider produksi perlu ditambahkan sesuai vendor final.
 - WebSocket untuk KDS real-time belum diimplementasi; direncanakan pada Fase 5.
 - Migrasi menggunakan `docker-entrypoint-initdb.d` yang hanya berjalan sekali saat volume baru; untuk incremental migration di produksi gunakan `golang-migrate` atau `goose`.

@@ -32,7 +32,7 @@
 | **Fase 1** | Fondasi monorepo, scaffold awal                            | ✅ Selesai      |
 | **Fase 2** | Autentikasi, manajemen cabang & menu, dashboard fungsional | ✅ Selesai      |
 | **Fase 3** | POS / manajemen pesanan                                    | ✅ Selesai      |
-| **Fase 4** | Integrasi QRIS gateway + webhook                           | 🔜 Direncanakan |
+| **Fase 4** | Integrasi QRIS gateway + webhook                           | 🚧 Berjalan     |
 | **Fase 5** | Kitchen Display System (KDS) real-time                     | ✅ Selesai      |
 | **Fase 6** | Laporan & analitik                                         | ✅ Selesai      |
 
@@ -260,20 +260,22 @@
 
 ---
 
-## Fase 4 — Integrasi QRIS Gateway & Webhook 🔜
+## Fase 4 — Integrasi QRIS Gateway & Webhook 🚧
 
 **Catatan:** Provider gateway QRIS harus dipilih sebelum fase ini dimulai.
 Setiap provider memiliki format invoice, signature webhook, dan mekanisme expire yang berbeda.
 
 **Estimasi scope:**
 
-- [ ] Konfigurasi merchant QRIS per-cabang (credential terenkripsi)
-- [ ] Endpoint buat invoice QRIS dinamis
-- [ ] Tampilkan QR code di halaman POS/pembayaran
-- [ ] Endpoint webhook dengan validasi signature provider
-- [ ] Pencegahan double-payment
-- [ ] Rekonsiliasi transaksi QRIS
-- [ ] Penanganan status: pending, paid, expired, failed
+- [x] Konfigurasi merchant QRIS per-cabang (credential terenkripsi)
+- [x] Endpoint buat invoice QRIS dinamis
+- [x] Tampilkan QR code di halaman POS/pembayaran
+- [x] Endpoint webhook dengan validasi signature provider
+- [x] Pencegahan double-payment
+- [x] Rekonsiliasi transaksi QRIS
+- [x] Penanganan status: pending, paid, expired, failed
+
+**Catatan implementasi saat ini:** integrasi menggunakan provider `qris_mock` untuk alur invoice, webhook signature, dan rekonsiliasi; adaptasi ke provider produksi tetap diperlukan.
 
 ---
 

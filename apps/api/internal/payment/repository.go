@@ -56,8 +56,8 @@ func (r *Repository) UpsertGatewayConfig(ctx context.Context, branchID, orgID ui
 	}
 
 	cfgPayload := map[string]string{
-		"merchant_id":         strings.TrimSpace(req.MerchantID),
-		"api_key_encrypted":   apiKeyEncrypted,
+		"merchant_id":              strings.TrimSpace(req.MerchantID),
+		"api_key_encrypted":        apiKeyEncrypted,
 		"webhook_secret_encrypted": webhookSecretEncrypted,
 	}
 	cfgJSON, err := json.Marshal(cfgPayload)
@@ -415,11 +415,11 @@ func (r *Repository) scanGatewayConfig(row interface{ Scan(...any) error }) (*Ga
 	apiKey, _ := decryptString(r.encryptKey, payload["api_key_encrypted"])
 	webhookSecret, _ := decryptString(r.encryptKey, payload["webhook_secret_encrypted"])
 	cfg.Config = map[string]string{
-		"merchant_id":     payload["merchant_id"],
-		"api_key":         apiKey,
-		"webhook_secret":  webhookSecret,
-		"api_key_masked":  maskSecret(apiKey),
-		"webhook_masked":  maskSecret(webhookSecret),
+		"merchant_id":    payload["merchant_id"],
+		"api_key":        apiKey,
+		"webhook_secret": webhookSecret,
+		"api_key_masked": maskSecret(apiKey),
+		"webhook_masked": maskSecret(webhookSecret),
 	}
 	return &cfg, nil
 }
