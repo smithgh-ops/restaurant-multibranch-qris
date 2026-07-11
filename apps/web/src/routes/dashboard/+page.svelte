@@ -29,8 +29,8 @@
 			title: 'Dapur (KDS)',
 			icon: '👨‍🍳',
 			description: 'Kitchen Display System untuk manajemen antrian masak.',
-			href: '/dashboard/kitchen',
-			status: 'Segera Hadir'
+			href: '/dashboard/kds',
+			status: 'Aktif'
 		},
 		{
 			title: 'Manajemen Cabang',

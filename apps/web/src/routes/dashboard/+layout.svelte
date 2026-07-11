@@ -9,7 +9,7 @@
 		{ href: '/dashboard/pos', label: 'POS', icon: '🖥️' },
 		{ href: '/dashboard/menu', label: 'Menu', icon: '🍽️' },
 		{ href: '/dashboard/orders', label: 'Pesanan', icon: '📋' },
-		{ href: '/dashboard/kitchen', label: 'Dapur', icon: '👨‍🍳' },
+		{ href: '/dashboard/kds', label: 'Dapur', icon: '👨‍🍳' },
 		{ href: '/dashboard/branches', label: 'Cabang', icon: '🏪' },
 		{ href: '/dashboard/reports', label: 'Laporan', icon: '📊' },
 		{ href: '/dashboard/settings', label: 'Pengaturan', icon: '⚙️' }

@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
 export interface ApiResponse<T = unknown> {
 	data?: T;
@@ -190,6 +190,39 @@ export interface CreateOrderPayload {
 	order_type?: OrderType;
 	notes?: string;
 	items: { menu_item_id: number; quantity: number; notes?: string }[];
+}
+
+// ── KDS ───────────────────────────────────────────────────────────────────────
+
+export type KitchenTicketStatus = 'queued' | 'in_progress' | 'done' | 'cancelled';
+
+export interface KitchenStation {
+	id: number;
+	branch_id: number;
+	name: string;
+	is_active: boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface KitchenTicket {
+	id: number;
+	order_id: number;
+	station_id?: number;
+	station_name?: string;
+	order_item_id: number;
+	branch_id: number;
+	table_id?: number;
+	order_code: string;
+	item_name: string;
+	quantity: number;
+	notes?: string;
+	status: KitchenTicketStatus;
+	priority: number;
+	started_at?: string;
+	completed_at?: string;
+	created_at: string;
+	updated_at: string;
 }
 
 // ── HTTP helper ───────────────────────────────────────────────────────────────
@@ -453,6 +486,55 @@ export const api = {
 				token,
 				body: JSON.stringify({ status })
 			});
+		}
+	},
+
+	// KDS
+	kds: {
+		stations: {
+			list(token: string, branchId: number): Promise<ApiResponse<{ data: KitchenStation[] }>> {
+				return request<{ data: KitchenStation[] }>(`/api/v1/branches/${branchId}/kds/stations`, {
+					token
+				});
+			},
+			create(
+				token: string,
+				branchId: number,
+				payload: { name: string }
+			): Promise<ApiResponse<KitchenStation>> {
+				return request<KitchenStation>(`/api/v1/branches/${branchId}/kds/stations`, {
+					method: 'POST',
+					token,
+					body: JSON.stringify(payload)
+				});
+			}
+		},
+		tickets: {
+			list(
+				token: string,
+				branchId: number,
+				filters?: { station_id?: number; status?: KitchenTicketStatus }
+			): Promise<ApiResponse<{ data: KitchenTicket[] }>> {
+				const params = new URLSearchParams();
+				if (filters?.station_id) params.set('station_id', String(filters.station_id));
+				if (filters?.status) params.set('status', filters.status);
+				const qs = params.toString() ? `?${params.toString()}` : '';
+				return request<{ data: KitchenTicket[] }>(`/api/v1/branches/${branchId}/kds/tickets${qs}`, {
+					token
+				});
+			},
+			updateStatus(
+				token: string,
+				branchId: number,
+				ticketId: number,
+				status: KitchenTicketStatus
+			): Promise<ApiResponse<KitchenTicket>> {
+				return request<KitchenTicket>(`/api/v1/branches/${branchId}/kds/tickets/${ticketId}/status`, {
+					method: 'PATCH',
+					token,
+					body: JSON.stringify({ status })
+				});
+			}
 		}
 	}
 

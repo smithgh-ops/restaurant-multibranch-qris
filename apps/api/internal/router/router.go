@@ -10,6 +10,7 @@ import (
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/branch"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/config"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/handler"
+	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/kds"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/menu"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/middleware"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/order"
@@ -57,8 +58,13 @@ func New(cfg *config.Config, db *sql.DB) *gin.Engine {
 	tableRepo := table.NewRepository(db)
 	tableHandler := table.NewHandler(tableRepo)
 
+	// KDS handler
+	kdsRepo := kds.NewRepository(db)
+	kdsHub := kds.NewHub()
+	kdsHandler := kds.NewHandler(kdsRepo, kdsHub, cfg.JWTSecret, cfg.CORSOrigins)
+
 	// Order handler
-	orderRepo := order.NewRepository(db)
+	orderRepo := order.NewRepository(db).WithKDS(kdsRepo, kdsHub)
 	orderHandler := order.NewHandler(orderRepo)
 
 	// API v1 group
@@ -71,6 +77,7 @@ func New(cfg *config.Config, db *sql.DB) *gin.Engine {
 		branch.RegisterRoutes(v1, branchHandler, authMW)
 		menu.RegisterRoutes(v1, menuHandler, authMW)
 		table.RegisterRoutes(v1, tableHandler, authMW)
+		kds.RegisterRoutes(v1, kdsHandler, authMW)
 		order.RegisterRoutes(v1, orderHandler, authMW)
 	}
 

@@ -8,16 +8,27 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/kds"
 )
 
 // Repository handles DB operations for orders.
 type Repository struct {
-	db *sql.DB
+	db     *sql.DB
+	kdsRepo *kds.Repository
+	kdsHub  *kds.Hub
 }
 
 // NewRepository creates a new order repository.
 func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
+}
+
+// WithKDS attaches optional KDS dependencies to order writes.
+func (r *Repository) WithKDS(repo *kds.Repository, hub *kds.Hub) *Repository {
+	r.kdsRepo = repo
+	r.kdsHub = hub
+	return r
 }
 
 // ── Scan helpers ──────────────────────────────────────────────────────────────
@@ -285,21 +296,72 @@ func (r *Repository) Create(ctx context.Context, orgID uint64, req *CreateOrderR
 
 // UpdateStatus changes the status of an order.
 func (r *Repository) UpdateStatus(ctx context.Context, id, orgID uint64, status string) (*Order, error) {
-	res, err := r.db.ExecContext(ctx, `
-		UPDATE orders o
-		JOIN branches b ON b.id = o.branch_id
-		SET o.status = ?
-		WHERE o.id = ? AND b.organization_id = ?`,
-		status, id, orgID,
-	)
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
+		return nil, fmt.Errorf("update status: begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	var branchID uint64
+	if err := tx.QueryRowContext(ctx, `
+		SELECT o.branch_id
+		FROM orders o
+		JOIN branches b ON b.id = o.branch_id
+		WHERE o.id = ? AND b.organization_id = ?
+		LIMIT 1
+		FOR UPDATE`,
+		id, orgID,
+	).Scan(&branchID); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, sql.ErrNoRows
+		}
+		return nil, fmt.Errorf("update status: load order: %w", err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE orders
+		SET status = ?
+		WHERE id = ?`,
+		status, id,
+	); err != nil {
 		return nil, fmt.Errorf("update status: %w", err)
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return nil, sql.ErrNoRows
+
+	createdTickets := make([]kds.KitchenTicket, 0)
+	updatedTickets := make([]kds.KitchenTicket, 0)
+	if r.kdsRepo != nil {
+		switch status {
+		case "confirmed":
+			createdTickets, err = r.kdsRepo.EnsureTicketsForOrderTx(ctx, tx, id)
+		case "cancelled":
+			updatedTickets, err = r.kdsRepo.CancelTicketsForOrderTx(ctx, tx, id)
+		}
+		if err != nil {
+			return nil, err
+		}
 	}
-	return r.FindByID(ctx, id, orgID)
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("update status: commit: %w", err)
+	}
+
+	o, err := r.FindByID(ctx, id, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	if r.kdsHub != nil {
+		for i := range createdTickets {
+			ticket := createdTickets[i]
+			_ = r.kdsHub.Broadcast(branchID, kds.RealtimeEvent{Type: "ticket.created", Ticket: &ticket})
+		}
+		for i := range updatedTickets {
+			ticket := updatedTickets[i]
+			_ = r.kdsHub.Broadcast(branchID, kds.RealtimeEvent{Type: "ticket.updated", Ticket: &ticket})
+		}
+	}
+
+	return o, nil
 }
 
 // generateOrderCode produces a unique order code like ORD-20240711-A1B2C3.
