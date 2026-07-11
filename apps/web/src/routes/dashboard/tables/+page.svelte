@@ -17,6 +17,9 @@
 	}
 
 	function qrImageURL(token: string) {
+		// NOTE: qrserver.com is used for convenience in development/staging.
+		// In production, consider a self-hosted or client-side QR library to avoid
+		// sending the self-order URL to a third-party service.
 		return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(selfOrderURL(token))}`;
 	}
 

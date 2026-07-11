@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -234,7 +235,9 @@ func (r *Repository) CreateOrderByToken(ctx context.Context, token string, req *
 	// Build order code.
 	now := time.Now()
 	randBytes := make([]byte, 3)
-	rand.Read(randBytes) //nolint:errcheck
+	if _, err := rand.Read(randBytes); err != nil {
+		return nil, fmt.Errorf("generate order code: %w", err)
+	}
 	orderCode := fmt.Sprintf("ORD-%s-%s", now.Format("20060102"), strings.ToUpper(hex.EncodeToString(randBytes)))
 
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -276,8 +279,10 @@ func (r *Repository) CreateOrderByToken(ctx context.Context, token string, req *
 		if priceOverride.Valid && priceOverride.String != "" {
 			priceStr = priceOverride.String
 		}
-		var price float64
-		fmt.Sscanf(priceStr, "%f", &price)
+		price, err := strconv.ParseFloat(priceStr, 64)
+		if err != nil {
+			return nil, fmt.Errorf("harga item '%s' tidak valid: %w", name, err)
+		}
 		totalAmount += price * float64(it.Quantity)
 		items = append(items, resolvedItem{
 			menuItemID: it.MenuItemID,

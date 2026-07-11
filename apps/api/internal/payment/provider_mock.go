@@ -31,6 +31,9 @@ func (m *MockGateway) CreateInvoice(_ context.Context, req *GatewayInvoiceReques
 		strings.ToUpper(now.Format("20060102150405")),
 	)
 	qrString := fmt.Sprintf("QRIS:%s:%s:%s", req.MerchantID, invoiceID, req.Amount)
+	// NOTE: qrserver.com is a third-party QR code rendering service used here for
+	// development/demo purposes. In production, generate QR images locally or via
+	// a self-hosted service to avoid sending invoice data to an external party.
 	qrCodeURL := "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + url.QueryEscape(qrString)
 	return &GatewayInvoiceResponse{
 		InvoiceID: invoiceID,

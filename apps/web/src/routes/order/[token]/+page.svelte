@@ -53,12 +53,12 @@
 		)
 	);
 
-	function addToCart(item: PublicMenuItem) {
-		const idx = cart.findIndex((c) => c.menuItemId === item.id);
+	function incrementCartItem(menuItemId: number, itemName: string, itemPrice: number) {
+		const idx = cart.findIndex((c) => c.menuItemId === menuItemId);
 		if (idx >= 0) {
 			cart[idx].quantity += 1;
 		} else {
-			cart.push({ menuItemId: item.id, name: item.name, price: Number(item.price), quantity: 1, notes: '' });
+			cart.push({ menuItemId, name: itemName, price: itemPrice, quantity: 1, notes: '' });
 		}
 	}
 
@@ -151,7 +151,7 @@
 				{#each visibleItems as item}
 					{@const inCart = cart.find((c) => c.menuItemId === item.id)}
 					<button
-						onclick={() => addToCart(item)}
+						onclick={() => incrementCartItem(item.id, item.name, Number(item.price))}
 						class="bg-white rounded-xl shadow-sm p-3 text-left hover:shadow-md hover:ring-2 hover:ring-orange-300 transition-all"
 					>
 						{#if item.image_url}
@@ -199,7 +199,7 @@
 								</button>
 								<span class="w-5 text-center font-semibold">{item.quantity}</span>
 								<button
-									onclick={() => addToCart({ id: item.menuItemId, category_id: 0, name: item.name, price: String(item.price) })}
+									onclick={() => incrementCartItem(item.menuItemId, item.name, item.price)}
 									class="w-6 h-6 rounded-full bg-orange-100 hover:bg-orange-200 text-orange-600 flex items-center justify-center text-xs font-bold"
 								>
 									+
