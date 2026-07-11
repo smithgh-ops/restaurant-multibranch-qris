@@ -35,6 +35,14 @@ type Config struct {
 	// File upload
 	UploadDir     string // local directory to store uploaded files
 	PublicBaseURL string // base URL used to build public URLs for uploaded files
+
+	// Payment gateway
+	// PaymentGateway selects the active QRIS provider: "mock" (default) or "midtrans".
+	PaymentGateway string
+	// MidtransServerKey is the Midtrans Server Key (only required when PaymentGateway = "midtrans").
+	MidtransServerKey string
+	// MidtransIsProduction switches between the Midtrans sandbox (false) and production (true) endpoints.
+	MidtransIsProduction bool
 }
 
 // Load reads configuration from environment variables, falling back to safe defaults.
@@ -71,6 +79,10 @@ func Load() *Config {
 
 		UploadDir:     getEnv("UPLOAD_DIR", "./uploads"),
 		PublicBaseURL: getEnv("PUBLIC_BASE_URL", "http://localhost:8080"),
+
+		PaymentGateway:       getEnv("PAYMENT_GATEWAY", "mock"),
+		MidtransServerKey:    getEnv("MIDTRANS_SERVER_KEY", ""),
+		MidtransIsProduction: getEnv("MIDTRANS_IS_PRODUCTION", "false") == "true",
 	}
 }
 

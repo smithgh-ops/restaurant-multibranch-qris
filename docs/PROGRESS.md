@@ -38,6 +38,7 @@
 | **Fase 7** | Self-order QR meja, gambar menu, adapter gateway           | ✅ Selesai      |
 | **Fase 8** | Manajemen pengguna & pengaturan profil                     | ✅ Selesai      |
 | **Fase 9** | Upload gambar menu (lokal)                                 | ✅ Selesai      |
+| **Fase 10**| Integrasi gateway QRIS nyata (Midtrans)                    | ✅ Selesai      |
 
 ---
 
@@ -510,3 +511,79 @@ go run ./cmd/seed \
 #### Environment
 
 - [x] `.env.example` diperbarui dengan `UPLOAD_DIR` dan `PUBLIC_BASE_URL`
+
+---
+
+## Fase 10 — Integrasi Gateway QRIS Nyata (Midtrans) ✅
+
+**Branch:** `copilot/implement-phase-2-authentication-role-management`
+
+### Backend (Go + Gin)
+
+#### Provider Midtrans (`internal/payment/provider_midtrans.go`)
+
+- [x] Implementasi interface `Gateway` untuk Midtrans Core API QRIS
+- [x] `CreateInvoice` — `POST /v2/charge` dengan `payment_type: qris`, Basic auth (Server Key)
+  - Parsing `expiry_time` dari response Midtrans
+  - Ekstraksi URL QR code dari array `actions[].name = "generate-qr-code"`
+  - Error handling HTTP dan status_code non-2xx
+- [x] `NormalizeWebhook` — validasi signature Midtrans:
+  - SHA-512( `order_id + status_code + gross_amount + serverKey` )
+  - Mapping `transaction_status` ke status platform: `paid/pending/failed/expired`
+  - Parsing `settlement_time` → RFC 3339 UTC untuk `PaidAt`
+- [x] `normalizeMidtransStatus` — mapping status Midtrans + fraud_status ke status platform
+- [x] `baseURLOverride` field — memungkinkan test menggunakan `httptest.Server` lokal
+- [x] Dukungan sandbox (`api.sandbox.midtrans.com`) dan production (`api.midtrans.com`) via flag `isProduction`
+- [x] Provider identifier: `"midtrans"` (sesuai kolom `provider` di `payment_gateway_configs`)
+
+#### Konfigurasi (`internal/config/config.go`)
+
+- [x] `PAYMENT_GATEWAY` — pilih provider aktif: `"mock"` (default) atau `"midtrans"`
+- [x] `MIDTRANS_SERVER_KEY` — Server Key Midtrans
+- [x] `MIDTRANS_IS_PRODUCTION` — `"true"` untuk production, `"false"` untuk sandbox
+
+#### Router (`internal/router/router.go`)
+
+- [x] Auto-register `MidtransGateway` ke payment repository jika `PAYMENT_GATEWAY=midtrans` dan `MIDTRANS_SERVER_KEY` tidak kosong
+- [x] Fallback tetap ke `MockGateway` (sudah diregistrasi oleh `NewRepository`)
+- [x] Bisa multi-provider: `paymentRepo.WithGateway()` bisa dipanggil lebih dari sekali
+
+#### Unit Tests (`internal/payment/provider_midtrans_test.go`)
+
+- [x] `TestMidtransGateway_Provider` — identifier provider benar
+- [x] `TestMidtransGateway_BaseURL` — sandbox dan production URL
+- [x] `TestMidtransGateway_CreateInvoice_Success` — happy path via `httptest.Server`
+- [x] `TestMidtransGateway_CreateInvoice_InvalidAmount` — jumlah non-numerik
+- [x] `TestMidtransGateway_CreateInvoice_GatewayError` — status_code 401
+- [x] `TestMidtransGateway_NormalizeWebhook_ValidSignature_Settlement` — signature valid, status paid
+- [x] `TestMidtransGateway_NormalizeWebhook_ValidSignature_Expire` — signature valid, status expired
+- [x] `TestMidtransGateway_NormalizeWebhook_InvalidSignature` — signature salah ditolak
+- [x] `TestMidtransGateway_NormalizeWebhook_MalformedPayload` — JSON rusak ditolak
+- [x] `TestMidtransGateway_NormalizeWebhook_MissingFields` — field wajib kosong ditolak
+- [x] `TestNormalizeMidtransStatus` — 10 kombinasi status × fraud_status
+
+#### Environment
+
+- [x] `.env.example` diperbarui dengan `PAYMENT_GATEWAY`, `MIDTRANS_SERVER_KEY`, `MIDTRANS_IS_PRODUCTION`
+
+### Catatan Penggunaan
+
+1. Daftar di [Midtrans Dashboard](https://dashboard.midtrans.com) dan ambil **Server Key** sandbox.
+2. Set di `.env`:
+   ```
+   PAYMENT_GATEWAY=midtrans
+   MIDTRANS_SERVER_KEY=SB-Mid-server-xxxxxx
+   MIDTRANS_IS_PRODUCTION=false
+   ```
+3. Konfigurasi gateway per-cabang via endpoint yang sudah ada:
+   ```
+   PUT /api/v1/branches/:id/payment-gateway-config
+   {
+     "provider": "midtrans",
+     "merchant_id": "G123456789",
+     "api_key": "SB-Mid-server-xxxxxx",
+     "webhook_secret": "SB-Mid-server-xxxxxx"
+   }
+   ```
+   > `api_key` dan `webhook_secret` keduanya berisi Server Key Midtrans (digunakan untuk Basic auth dan validasi webhook signature masing-masing).
+4. Midtrans akan mengirim webhook ke `POST /api/v1/webhook/payment?branch_id=<id>`. Pastikan endpoint ini dapat diakses publik (gunakan ngrok untuk development lokal).

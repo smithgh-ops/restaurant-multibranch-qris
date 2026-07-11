@@ -78,6 +78,9 @@ func New(cfg *config.Config, db *sql.DB) *gin.Engine {
 
 	// Payment handler
 	paymentRepo := payment.NewRepository(db, cfg.JWTSecret)
+	if cfg.PaymentGateway == "midtrans" && cfg.MidtransServerKey != "" {
+		paymentRepo.WithGateway(payment.NewMidtransGateway(cfg.MidtransServerKey, cfg.MidtransIsProduction))
+	}
 	paymentHandler := payment.NewHandler(paymentRepo)
 
 	// Self-order handler
