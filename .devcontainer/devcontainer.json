@@ -1,0 +1,49 @@
+{
+  "name": "RestoQRIS Dev",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+
+  "features": {
+    "ghcr.io/devcontainers/features/go:1": { "version": "1.23" },
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+
+  // Forward web dev server and Go API ports.
+  "forwardPorts": [5173, 8080],
+  "portsAttributes": {
+    "5173": {
+      "label": "Web Frontend (SvelteKit)",
+      "onAutoForward": "openBrowserOnce"
+    },
+    "8080": {
+      "label": "Go API",
+      "onAutoForward": "silent"
+    }
+  },
+
+  // Runs once when the Codespace is first created:
+  // installs dependencies, builds the API binary, and seeds a demo admin.
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  // Runs every time the Codespace starts:
+  // starts MySQL, Redis, API, and the SvelteKit dev server.
+  "postStartCommand": "bash .devcontainer/start.sh",
+
+  "waitFor": "postCreateCommand",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "svelte.svelte-vscode",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "go.toolsManagement.autoUpdate": true
+      }
+    }
+  },
+
+  "remoteUser": "vscode"
+}
