@@ -24,6 +24,9 @@ build/
 *.out
 vendor/
 
+# Devcontainer build artifacts
+.devbuild/
+
 # Environment
 .env
 .env.local
