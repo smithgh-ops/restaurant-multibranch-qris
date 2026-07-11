@@ -113,7 +113,7 @@
 		if (form && 'orderCode' in form && form.orderCode) {
 			orderSuccess = form.orderCode as string;
 			paymentInfo = ('payment' in form ? (form.payment as Payment) : null) ?? null;
-			paymentWarning = ('paymentWarning' in form ? (form.paymentWarning as string) : null) ?? null;
+			paymentWarning = 'paymentWarning' in form ? (form.paymentWarning as string) : null;
 			cart = [];
 			selectedTableId = null;
 			orderNotes = '';

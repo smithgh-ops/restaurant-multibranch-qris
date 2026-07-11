@@ -2,7 +2,9 @@ package payment
 
 import (
 	"context"
+	"crypto/hmac"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -174,8 +176,9 @@ func (r *Repository) CreateInvoice(ctx context.Context, orderID, orgID uint64, r
 	if req != nil && req.ExpiryMinutes >= 5 && req.ExpiryMinutes <= 120 {
 		expiryMinutes = req.ExpiryMinutes
 	}
-	expiryAt := time.Now().Add(time.Duration(expiryMinutes) * time.Minute)
-	invoiceID := fmt.Sprintf("INV-%d-%s", orderID, strings.ToUpper(time.Now().Format("20060102150405")))
+	now := time.Now()
+	expiryAt := now.Add(time.Duration(expiryMinutes) * time.Minute)
+	invoiceID := fmt.Sprintf("INV-%d-%s", orderID, strings.ToUpper(now.Format("20060102150405")))
 	qrString := fmt.Sprintf("QRIS:%s:%s:%s", cfg.Config["merchant_id"], invoiceID, totalAmount)
 	qrCodeURL := "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + url.QueryEscape(qrString)
 
@@ -376,7 +379,15 @@ func (r *Repository) ValidateWebhookSignature(ctx context.Context, branchID uint
 		return false
 	}
 	expected := computeSignature(secret, payload)
-	return strings.EqualFold(strings.TrimSpace(signature), expected)
+	expectedBytes, err := hex.DecodeString(expected)
+	if err != nil {
+		return false
+	}
+	signatureBytes, err := hex.DecodeString(strings.TrimSpace(signature))
+	if err != nil {
+		return false
+	}
+	return hmac.Equal(signatureBytes, expectedBytes)
 }
 
 func (r *Repository) loadActiveGatewayConfig(ctx context.Context, branchID uint64) (*GatewayConfig, error) {

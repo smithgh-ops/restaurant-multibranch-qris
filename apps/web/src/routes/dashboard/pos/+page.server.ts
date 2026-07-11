@@ -62,10 +62,11 @@ export const actions: Actions = {
 
 		const invoiceRes = await api.payments.createInvoice(locals.accessToken, orderId);
 		if (invoiceRes.error) {
+			const paymentWarning = 'Invoice QRIS belum tersedia. Silakan coba buat invoice ulang dari modul pembayaran.';
 			return {
 				success: true,
 				orderCode: res.data?.order_code,
-				paymentWarning: invoiceRes.error
+				paymentWarning
 			};
 		}
 		return { success: true, orderCode: res.data?.order_code, payment: invoiceRes.data };
