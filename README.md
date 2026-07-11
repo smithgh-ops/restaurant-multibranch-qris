@@ -190,6 +190,10 @@ Untuk lingkungan produksi, disarankan menggunakan alat migrasi seperti [golang-m
 | POST   | `/api/v1/orders/:id/payments/qris-invoice` | JWT | Buat/reuse invoice QRIS dinamis untuk order |
 | GET    | `/api/v1/payments/reconciliation`          | JWT  | Daftar transaksi QRIS untuk rekonsiliasi |
 | POST   | `/api/v1/payments/webhooks/qris`           | —    | Webhook status pembayaran QRIS (signature) |
+| POST   | `/api/v1/branches/:branch_id/tables/:table_id/qr-token` | JWT | Generate QR token self-order per meja |
+| GET    | `/api/v1/branches/:branch_id/tables/:table_id/qr-token` | JWT | Lihat token QR aktif per meja |
+| GET    | `/api/v1/public/table/:token`              | —    | Menu publik by QR token (self-order) |
+| POST   | `/api/v1/public/table/:token/orders`       | —    | Buat pesanan self-order (tanpa login) |
 
 ---
 
@@ -240,6 +244,5 @@ go run ./cmd/seed \
 
 ## Catatan
 
-- Integrasi QRIS saat ini menggunakan provider mock (`qris_mock`); adapter provider produksi perlu ditambahkan sesuai vendor final.
-- WebSocket untuk KDS real-time belum diimplementasi; direncanakan pada Fase 5.
+- Integrasi QRIS menggunakan provider `qris_mock` secara default. Untuk beralih ke provider produksi (Midtrans, Xendit, dll.), implementasikan interface `Gateway` di `apps/api/internal/payment/gateway.go` dan daftarkan via `Repository.WithGateway()`.
 - Migrasi menggunakan `docker-entrypoint-initdb.d` yang hanya berjalan sekali saat volume baru; untuk incremental migration di produksi gunakan `golang-migrate` atau `goose`.

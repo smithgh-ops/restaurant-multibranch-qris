@@ -240,6 +240,16 @@
 							/>
 						</div>
 					</div>
+					<div>
+						<label for="new-item-image" class="block text-sm font-medium text-gray-700 mb-1">URL Gambar</label>
+						<input
+							id="new-item-image"
+							name="image_url"
+							type="url"
+							placeholder="https://... (opsional)"
+							class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+						/>
+					</div>
 					<div class="flex gap-3">
 						<button
 							type="submit"
@@ -318,6 +328,22 @@
 								<option value="true" selected={editingItem.is_active}>Aktif</option>
 								<option value="false" selected={!editingItem.is_active}>Nonaktif</option>
 							</select>
+						</div>
+					</div>
+					<div>
+						<label for="edit-item-image" class="block text-sm font-medium text-gray-700 mb-1">URL Gambar</label>
+						<div class="flex gap-3 items-start">
+							{#if editingItem.image_url}
+								<img src={editingItem.image_url} alt={editingItem.name} class="w-14 h-14 rounded-lg object-cover border border-gray-200 shrink-0" />
+							{/if}
+							<input
+								id="edit-item-image"
+								name="image_url"
+								type="url"
+								value={editingItem.image_url ?? ''}
+								placeholder="https://... (opsional)"
+								class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+							/>
 						</div>
 					</div>
 					<div class="flex gap-3">

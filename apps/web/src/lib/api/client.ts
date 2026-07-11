@@ -272,6 +272,59 @@ export interface TopItem {
 	total_revenue: string;
 }
 
+// ── Self-order (public QR table) ──────────────────────────────────────────────
+
+export interface QRTableToken {
+	id: number;
+	table_id: number;
+	branch_id: number;
+	token: string;
+	is_active: boolean;
+	expires_at?: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface PublicBranch {
+	id: number;
+	name: string;
+	address?: string;
+}
+
+export interface PublicTable {
+	id: number;
+	table_number: string;
+	capacity: number;
+}
+
+export interface PublicMenuItem {
+	id: number;
+	category_id: number;
+	name: string;
+	description?: string;
+	price: string;
+	image_url?: string;
+}
+
+export interface PublicMenuCategory {
+	id: number;
+	name: string;
+	items: PublicMenuItem[];
+}
+
+export interface PublicMenuResponse {
+	branch: PublicBranch;
+	table: PublicTable;
+	categories: PublicMenuCategory[];
+}
+
+export interface SelfOrderResponse {
+	order_id: number;
+	order_code: string;
+	status: string;
+	total_amount: string;
+}
+
 // ── HTTP helper ───────────────────────────────────────────────────────────────
 
 async function request<T>(
@@ -553,6 +606,36 @@ export const api = {
 				method: 'POST',
 				token,
 				body: JSON.stringify(payload ?? {})
+			});
+		}
+	},
+
+	// Self-order QR table tokens
+	selforder: {
+		generateToken(token: string, branchId: number, tableId: number): Promise<ApiResponse<QRTableToken>> {
+			return request<QRTableToken>(`/api/v1/branches/${branchId}/tables/${tableId}/qr-token`, {
+				method: 'POST',
+				token
+			});
+		},
+		getToken(token: string, branchId: number, tableId: number): Promise<ApiResponse<QRTableToken>> {
+			return request<QRTableToken>(`/api/v1/branches/${branchId}/tables/${tableId}/qr-token`, {
+				token
+			});
+		},
+		getMenu(tableToken: string): Promise<ApiResponse<PublicMenuResponse>> {
+			return request<PublicMenuResponse>(`/api/v1/public/table/${tableToken}`);
+		},
+		createOrder(
+			tableToken: string,
+			payload: {
+				notes?: string;
+				items: { menu_item_id: number; quantity: number; notes?: string }[];
+			}
+		): Promise<ApiResponse<SelfOrderResponse>> {
+			return request<SelfOrderResponse>(`/api/v1/public/table/${tableToken}/orders`, {
+				method: 'POST',
+				body: JSON.stringify(payload)
 			});
 		}
 	},

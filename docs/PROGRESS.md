@@ -32,9 +32,10 @@
 | **Fase 1** | Fondasi monorepo, scaffold awal                            | ✅ Selesai      |
 | **Fase 2** | Autentikasi, manajemen cabang & menu, dashboard fungsional | ✅ Selesai      |
 | **Fase 3** | POS / manajemen pesanan                                    | ✅ Selesai      |
-| **Fase 4** | Integrasi QRIS gateway + webhook                           | 🚧 Berjalan     |
+| **Fase 4** | Integrasi QRIS gateway + webhook                           | ✅ Selesai      |
 | **Fase 5** | Kitchen Display System (KDS) real-time                     | ✅ Selesai      |
 | **Fase 6** | Laporan & analitik                                         | ✅ Selesai      |
+| **Fase 7** | Self-order QR meja, gambar menu, adapter gateway           | ✅ Selesai      |
 
 ---
 
@@ -260,22 +261,27 @@
 
 ---
 
-## Fase 4 — Integrasi QRIS Gateway & Webhook 🚧
+## Fase 4 — Integrasi QRIS Gateway & Webhook ✅
 
-**Catatan:** Provider gateway QRIS harus dipilih sebelum fase ini dimulai.
-Setiap provider memiliki format invoice, signature webhook, dan mekanisme expire yang berbeda.
+**Catatan:** Implementasi menggunakan provider `qris_mock` untuk alur invoice, webhook signature, dan rekonsiliasi. Untuk beralih ke provider produksi (Midtrans, Xendit, dll.), implementasikan interface `Gateway` di `internal/payment/gateway.go` dan daftarkan via `Repository.WithGateway()`.
 
-**Estimasi scope:**
+### Backend (Go + Gin)
 
-- [x] Konfigurasi merchant QRIS per-cabang (credential terenkripsi)
-- [x] Endpoint buat invoice QRIS dinamis
-- [x] Tampilkan QR code di halaman POS/pembayaran
-- [x] Endpoint webhook dengan validasi signature provider
-- [x] Pencegahan double-payment
-- [x] Rekonsiliasi transaksi QRIS
+- [x] Konfigurasi merchant QRIS per-cabang (credential terenkripsi AES-GCM)
+- [x] **Interface `Gateway`** (`internal/payment/gateway.go`) — abstraksi provider QRIS yang dapat ditukar
+- [x] **`MockGateway`** (`internal/payment/provider_mock.go`) — implementasi built-in untuk development
+- [x] `NewRepository(...).WithGateway(gw)` — registry provider; tambahkan provider produksi tanpa mengubah kode inti
+- [x] Endpoint buat invoice QRIS dinamis (`POST /api/v1/orders/:id/payments/qris-invoice`)
+- [x] Endpoint webhook dengan validasi signature via `Gateway.NormalizeWebhook()`
+- [x] Pencegahan double-payment (idempotency via `gateway_invoice_id`)
+- [x] Rekonsiliasi transaksi QRIS (`GET /api/v1/payments/reconciliation`)
 - [x] Penanganan status: pending, paid, expired, failed
 
-**Catatan implementasi saat ini:** integrasi menggunakan provider `qris_mock` untuk alur invoice, webhook signature, dan rekonsiliasi; adaptasi ke provider produksi tetap diperlukan.
+### Frontend (SvelteKit)
+
+- [x] Tampilkan QR code di halaman POS setelah checkout
+- [x] Warning jika invoice QRIS gagal dibuat (pesanan tetap dicatat)
+- [x] Konfigurasi gateway QRIS per-cabang via endpoint yang ada
 
 ---
 
@@ -311,7 +317,55 @@ Setiap provider memiliki format invoice, signature webhook, dan mekanisme expire
 
 ---
 
-## Cara Menjalankan Lokal
+## Fase 7 — Self-order QR Meja, Gambar Menu, Gateway Adapter ✅
+
+**Branch:** `copilot/implement-phase-2-authentication-role-management`
+
+### Backend (Go + Gin)
+
+#### QRIS Gateway Adapter (`internal/payment/`)
+
+- [x] Interface `Gateway` — abstraksi provider QRIS (invoice + webhook normalization)
+- [x] `MockGateway` — implementasi built-in untuk development/testing
+- [x] `Repository.WithGateway()` — registry multi-provider; tambahkan Midtrans/Xendit tanpa mengubah kode inti
+- [x] `Repository.NormalizeWebhook()` — delegasikan validasi signature + parsing ke provider
+- [x] Handler webhook menggunakan `query param branch_id` (tidak lagi bergantung pada body format tertentu)
+
+#### Self-order QR Meja (`internal/selforder/`)
+
+- [x] Migrasi `012_create_qr_table_tokens.sql` — tabel token QR per meja
+- [x] `POST /api/v1/branches/:branch_id/tables/:table_id/qr-token` — generate token QR baru (JWT required)
+- [x] `GET /api/v1/branches/:branch_id/tables/:table_id/qr-token` — lihat token aktif (JWT required)
+- [x] `GET /api/v1/public/table/:token` — menu publik per token (tanpa login)
+- [x] `POST /api/v1/public/table/:token/orders` — buat pesanan self-order (tanpa login)
+- [x] Token 64-char hex acak, idempotent (deactivate token lama saat generate ulang)
+- [x] Harga efektif = override cabang jika ada, fallback ke harga dasar
+
+### Frontend (SvelteKit)
+
+#### Dashboard Meja & QR (`/dashboard/tables`)
+
+- [x] Pilih cabang → tampilkan daftar meja
+- [x] Generate QR token per meja (satu klik)
+- [x] Tampilkan QR code gambar + URL self-order
+- [x] Tombol salin URL dan buka tab baru
+- [x] Sidebar: tambah menu item "Meja & QR" (🪑)
+
+#### Halaman Self-order Publik (`/order/[token]`)
+
+- [x] Halaman publik (tidak perlu login), accessible dari QR code
+- [x] Tampilkan nama cabang dan nomor meja
+- [x] Filter menu per kategori
+- [x] Keranjang stiky di bawah layar dengan tombol +/−
+- [x] Checkout → POST ke public API, tampilkan kode pesanan sukses
+
+#### Gambar Menu
+
+- [x] Field `image_url` di form tambah dan edit item menu
+- [x] Preview thumbnail gambar pada form edit
+- [x] POS grid dan self-order menampilkan gambar jika tersedia
+
+---
 
 ```bash
 # 1. Salin file environment

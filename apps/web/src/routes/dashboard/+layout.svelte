@@ -11,6 +11,7 @@
 		{ href: '/dashboard/orders', label: 'Pesanan', icon: '📋' },
 		{ href: '/dashboard/kds', label: 'Dapur', icon: '👨‍🍳' },
 		{ href: '/dashboard/branches', label: 'Cabang', icon: '🏪' },
+		{ href: '/dashboard/tables', label: 'Meja & QR', icon: '🪑' },
 		{ href: '/dashboard/reports', label: 'Laporan', icon: '📊' },
 		{ href: '/dashboard/settings', label: 'Pengaturan', icon: '⚙️' }
 	];

@@ -42,6 +42,7 @@ export const actions: Actions = {
 		const name = String(form.get('name') ?? '').trim();
 		const description = String(form.get('description') ?? '').trim() || undefined;
 		const base_price = String(form.get('base_price') ?? '').trim();
+		const image_url = String(form.get('image_url') ?? '').trim() || undefined;
 
 		if (!category_id || !name || !base_price) {
 			return fail(400, { error: 'Kategori, nama, dan harga wajib diisi.' });
@@ -51,7 +52,8 @@ export const actions: Actions = {
 			category_id,
 			name,
 			description,
-			base_price
+			base_price,
+			image_url
 		});
 		if (res.error) return fail(400, { error: res.error });
 		return { success: true, action: 'createItem' };
@@ -65,6 +67,7 @@ export const actions: Actions = {
 		const name = String(form.get('name') ?? '').trim() || undefined;
 		const base_price = String(form.get('base_price') ?? '').trim() || undefined;
 		const description = String(form.get('description') ?? '').trim() || undefined;
+		const image_url = String(form.get('image_url') ?? '').trim() || undefined;
 		const isActiveRaw = form.get('is_active');
 		const is_active = isActiveRaw !== null ? isActiveRaw === 'true' : undefined;
 
@@ -74,6 +77,7 @@ export const actions: Actions = {
 			name,
 			base_price,
 			description,
+			image_url,
 			is_active
 		});
 		if (res.error) return fail(400, { error: res.error });

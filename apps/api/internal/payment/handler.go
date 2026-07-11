@@ -2,7 +2,6 @@ package payment
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -155,24 +154,27 @@ func (h *Handler) Webhook(c *gin.Context) {
 		return
 	}
 
-	var req WebhookRequest
-	if err := json.Unmarshal(raw, &req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "data webhook tidak valid: " + err.Error()})
-		return
-	}
-	if _, ok := validPaymentStatuses[req.Status]; !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "status pembayaran tidak valid"})
+	// Extract branch_id from query param so we can load the right gateway config.
+	branchID, err := strconv.ParseUint(strings.TrimSpace(c.Query("branch_id")), 10, 64)
+	if err != nil || branchID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "query parameter branch_id wajib ada dan valid"})
 		return
 	}
 
 	signature := c.GetHeader("X-QRIS-Signature")
-	if !h.repo.ValidateWebhookSignature(c.Request.Context(), req.BranchID, raw, signature) {
-		slog.Warn("invalid payment webhook signature", "branch_id", req.BranchID, "event_id", req.EventID)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "signature webhook tidak valid"})
+	event, err := h.repo.NormalizeWebhook(c.Request.Context(), branchID, raw, signature)
+	if err != nil {
+		slog.Warn("webhook rejected", "branch_id", branchID, "error", err)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	p, err := h.repo.ProcessWebhook(c.Request.Context(), &req, raw)
+	if _, ok := validPaymentStatuses[event.Status]; !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "status pembayaran tidak valid"})
+		return
+	}
+
+	p, err := h.repo.ProcessWebhook(c.Request.Context(), branchID, event, raw)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

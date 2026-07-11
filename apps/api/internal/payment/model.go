@@ -44,7 +44,9 @@ type CreateInvoiceRequest struct {
 	ExpiryMinutes int `json:"expiry_minutes"`
 }
 
-// WebhookRequest is normalized mock QRIS webhook payload.
+// WebhookRequest is the legacy normalized mock QRIS webhook payload.
+// Kept for backwards-compatibility with existing API documentation.
+// New webhook flows go through Gateway.NormalizeWebhook instead.
 type WebhookRequest struct {
 	Provider  string `json:"provider" binding:"required"`
 	BranchID  uint64 `json:"branch_id" binding:"required"`

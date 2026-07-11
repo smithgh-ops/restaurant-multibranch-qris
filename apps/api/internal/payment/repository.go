@@ -2,13 +2,10 @@ package payment
 
 import (
 	"context"
-	"crypto/hmac"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -18,11 +15,27 @@ import (
 type Repository struct {
 	db         *sql.DB
 	encryptKey []byte
+	gateways   map[string]Gateway
 }
 
-// NewRepository creates a payment repository.
+// NewRepository creates a payment repository pre-registered with MockGateway.
+// Use WithGateway to register additional production providers.
 func NewRepository(db *sql.DB, appSecret string) *Repository {
-	return &Repository{db: db, encryptKey: deriveKey(appSecret)}
+	r := &Repository{
+		db:         db,
+		encryptKey: deriveKey(appSecret),
+		gateways:   make(map[string]Gateway),
+	}
+	mock := &MockGateway{}
+	r.gateways[mock.Provider()] = mock
+	return r
+}
+
+// WithGateway registers an additional Gateway provider. Call this from the router
+// when wiring up a real production provider (e.g. Midtrans, Xendit).
+func (r *Repository) WithGateway(gw Gateway) *Repository {
+	r.gateways[gw.Provider()] = gw
+	return r
 }
 
 // LoadGatewayConfig returns branch payment gateway config.
@@ -155,6 +168,11 @@ func (r *Repository) CreateInvoice(ctx context.Context, orderID, orgID uint64, r
 		return nil, err
 	}
 
+	gw, ok := r.gateways[cfg.Provider]
+	if !ok {
+		return nil, fmt.Errorf("provider gateway '%s' tidak dikenali; daftarkan provider sebelum digunakan", cfg.Provider)
+	}
+
 	existing, err := r.loadLatestOrderPaymentTx(ctx, tx, orderID)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
@@ -179,15 +197,22 @@ func (r *Repository) CreateInvoice(ctx context.Context, orderID, orgID uint64, r
 	}
 	now := time.Now()
 	expiryAt := now.Add(time.Duration(expiryMinutes) * time.Minute)
-	invoiceID := fmt.Sprintf("INV-%d-%s", orderID, strings.ToUpper(now.Format("20060102150405")))
-	qrString := fmt.Sprintf("QRIS:%s:%s:%s", cfg.Config["merchant_id"], invoiceID, totalAmount)
-	qrCodeURL := "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + url.QueryEscape(qrString)
+
+	invoiceRes, err := gw.CreateInvoice(ctx, &GatewayInvoiceRequest{
+		MerchantID: cfg.Config["merchant_id"],
+		OrderCode:  orderCode,
+		Amount:     totalAmount,
+		ExpiryAt:   expiryAt,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("gagal membuat invoice dari gateway: %w", err)
+	}
 
 	res, err := tx.ExecContext(ctx, `
 		INSERT INTO payments
 		  (order_id, gateway_config_id, gateway_invoice_id, payment_method, amount, status, qr_code_url, qr_string, expiry_at)
 		VALUES (?, ?, ?, 'qris', ?, 'pending', ?, ?, ?)
-	`, orderID, cfg.ID, invoiceID, totalAmount, qrCodeURL, qrString, expiryAt)
+	`, orderID, cfg.ID, invoiceRes.InvoiceID, totalAmount, invoiceRes.QRCodeURL, invoiceRes.QRString, invoiceRes.ExpiryAt)
 	if err != nil {
 		if strings.Contains(err.Error(), "1062") {
 			return nil, fmt.Errorf("invoice gateway sudah terdaftar")
@@ -268,9 +293,9 @@ func (r *Repository) ListReconciliation(
 	return out, rows.Err()
 }
 
-// ProcessWebhook processes provider webhook and updates payment status.
-func (r *Repository) ProcessWebhook(ctx context.Context, req *WebhookRequest, rawPayload []byte) (*Payment, error) {
-	if _, ok := validPaymentStatuses[req.Status]; !ok {
+// ProcessWebhook applies a normalized webhook event to update payment status.
+func (r *Repository) ProcessWebhook(ctx context.Context, branchID uint64, event *GatewayWebhookEvent, rawPayload []byte) (*Payment, error) {
+	if _, ok := validPaymentStatuses[event.Status]; !ok {
 		return nil, fmt.Errorf("status pembayaran tidak valid")
 	}
 
@@ -280,7 +305,7 @@ func (r *Repository) ProcessWebhook(ctx context.Context, req *WebhookRequest, ra
 	}
 	defer tx.Rollback() //nolint:errcheck
 
-	p, err := r.findPaymentByInvoiceIDTx(ctx, tx, req.InvoiceID)
+	p, err := r.findPaymentByInvoiceIDTx(ctx, tx, event.InvoiceID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("invoice pembayaran tidak ditemukan")
@@ -297,15 +322,15 @@ func (r *Repository) ProcessWebhook(ctx context.Context, req *WebhookRequest, ra
 	).Scan(&paymentBranchID); err != nil {
 		return nil, fmt.Errorf("load payment branch: %w", err)
 	}
-	if paymentBranchID != req.BranchID {
-		slog.Warn("payment webhook branch mismatch", "invoice_id", req.InvoiceID, "expected_branch_id", paymentBranchID, "received_branch_id", req.BranchID)
+	if paymentBranchID != branchID {
+		slog.Warn("payment webhook branch mismatch", "invoice_id", event.InvoiceID, "expected_branch_id", paymentBranchID, "received_branch_id", branchID)
 		return nil, fmt.Errorf("branch webhook tidak cocok")
 	}
 
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO payment_webhook_logs (payment_id, gateway_event_id, event_type, raw_payload, is_processed)
 		VALUES (?, ?, ?, ?, 0)
-	`, p.ID, req.EventID, req.EventType, string(rawPayload)); err != nil {
+	`, p.ID, event.EventID, event.EventType, string(rawPayload)); err != nil {
 		if strings.Contains(err.Error(), "1062") {
 			if err := tx.Commit(); err != nil {
 				return nil, err
@@ -315,14 +340,14 @@ func (r *Repository) ProcessWebhook(ctx context.Context, req *WebhookRequest, ra
 		return nil, fmt.Errorf("insert webhook log: %w", err)
 	}
 
-	newStatus := req.Status
+	newStatus := event.Status
 	if p.Status == "paid" {
 		newStatus = "paid"
 	}
 	var paidAt any
 	if newStatus == "paid" {
-		if req.PaidAt != "" {
-			parsed, parseErr := time.Parse(time.RFC3339, req.PaidAt)
+		if event.PaidAt != "" {
+			parsed, parseErr := time.Parse(time.RFC3339, event.PaidAt)
 			if parseErr == nil {
 				paidAt = parsed
 			}
@@ -359,7 +384,7 @@ func (r *Repository) ProcessWebhook(ctx context.Context, req *WebhookRequest, ra
 		UPDATE payment_webhook_logs
 		SET is_processed = 1, processed_at = CURRENT_TIMESTAMP
 		WHERE gateway_event_id = ?
-	`, req.EventID)
+	`, event.EventID)
 
 	updated, err := r.findPaymentByIDTx(ctx, tx, p.ID)
 	if err != nil {
@@ -371,25 +396,25 @@ func (r *Repository) ProcessWebhook(ctx context.Context, req *WebhookRequest, ra
 	return updated, nil
 }
 
-func (r *Repository) ValidateWebhookSignature(ctx context.Context, branchID uint64, payload []byte, signature string) bool {
+// NormalizeWebhook loads the active gateway config for the branch, selects the
+// appropriate Gateway, and delegates signature verification and payload parsing to it.
+// Returns the normalized GatewayWebhookEvent or an error if validation fails.
+func (r *Repository) NormalizeWebhook(ctx context.Context, branchID uint64, rawPayload []byte, signature string) (*GatewayWebhookEvent, error) {
 	cfg, err := r.loadActiveGatewayConfig(ctx, branchID)
 	if err != nil {
-		return false
+		return nil, fmt.Errorf("konfigurasi gateway tidak ditemukan untuk cabang ini")
 	}
-	secret := strings.TrimSpace(cfg.Config["webhook_secret"])
-	if secret == "" {
-		return false
+	gw, ok := r.gateways[cfg.Provider]
+	if !ok {
+		return nil, fmt.Errorf("provider gateway '%s' tidak dikenali", cfg.Provider)
 	}
-	expected := computeSignature(secret, payload)
-	expectedBytes, err := hex.DecodeString(expected)
+	webhookSecret := strings.TrimSpace(cfg.Config["webhook_secret"])
+	event, err := gw.NormalizeWebhook(rawPayload, signature, webhookSecret)
 	if err != nil {
-		return false
+		slog.Warn("webhook normalization failed", "branch_id", branchID, "provider", cfg.Provider, "error", err)
+		return nil, err
 	}
-	signatureBytes, err := hex.DecodeString(strings.TrimSpace(signature))
-	if err != nil {
-		return false
-	}
-	return hmac.Equal(signatureBytes, expectedBytes)
+	return event, nil
 }
 
 func (r *Repository) loadActiveGatewayConfig(ctx context.Context, branchID uint64) (*GatewayConfig, error) {

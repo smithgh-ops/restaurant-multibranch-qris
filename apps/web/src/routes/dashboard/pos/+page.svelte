@@ -273,9 +273,13 @@
 							onclick={() => addToCart(item)}
 							class="bg-white rounded-xl shadow-sm p-4 text-left hover:shadow-md hover:ring-2 hover:ring-orange-300 transition-all"
 						>
-							<div class="w-full h-24 rounded-lg bg-orange-50 flex items-center justify-center text-4xl mb-3">
-								🍜
-							</div>
+							{#if item.image_url}
+								<img src={item.image_url} alt={item.name} class="w-full h-24 rounded-lg object-cover mb-3" loading="lazy" />
+							{:else}
+								<div class="w-full h-24 rounded-lg bg-orange-50 flex items-center justify-center text-4xl mb-3">
+									🍜
+								</div>
+							{/if}
 							<p class="font-semibold text-gray-800 text-sm line-clamp-1">{item.name}</p>
 							<p class="text-orange-500 font-semibold text-sm mt-1">{formatPrice(item.base_price)}</p>
 						</button>
