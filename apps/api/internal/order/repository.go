@@ -14,7 +14,7 @@ import (
 
 // Repository handles DB operations for orders.
 type Repository struct {
-	db     *sql.DB
+	db      *sql.DB
 	kdsRepo *kds.Repository
 	kdsHub  *kds.Hub
 }

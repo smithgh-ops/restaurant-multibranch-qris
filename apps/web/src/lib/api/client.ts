@@ -152,7 +152,8 @@ export interface UpdateTablePayload {
 
 // ── Order ─────────────────────────────────────────────────────────────────────
 
-export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+export type OrderStatus =
+	'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled';
 export type OrderType = 'dine_in' | 'takeaway' | 'delivery';
 
 export interface OrderItem {
@@ -395,7 +396,10 @@ export const api = {
 					body: JSON.stringify(payload)
 				});
 			},
-			branchSettings(token: string, itemId: number): Promise<ApiResponse<{ data: MenuBranchSetting[] }>> {
+			branchSettings(
+				token: string,
+				itemId: number
+			): Promise<ApiResponse<{ data: MenuBranchSetting[] }>> {
 				return request<{ data: MenuBranchSetting[] }>(`/api/v1/menu/items/${itemId}/branches`, {
 					token
 				});
@@ -406,14 +410,11 @@ export const api = {
 				branchId: number,
 				payload: { price_override?: string; is_available: boolean }
 			): Promise<ApiResponse<MenuBranchSetting>> {
-				return request<MenuBranchSetting>(
-					`/api/v1/menu/items/${itemId}/branches/${branchId}`,
-					{
-						method: 'PUT',
-						token,
-						body: JSON.stringify(payload)
-					}
-				);
+				return request<MenuBranchSetting>(`/api/v1/menu/items/${itemId}/branches/${branchId}`, {
+					method: 'PUT',
+					token,
+					body: JSON.stringify(payload)
+				});
 			}
 		}
 	},
@@ -421,7 +422,9 @@ export const api = {
 	// Tables
 	tables: {
 		diningAreas(token: string, branchId: number): Promise<ApiResponse<{ data: DiningArea[] }>> {
-			return request<{ data: DiningArea[] }>(`/api/v1/branches/${branchId}/dining-areas`, { token });
+			return request<{ data: DiningArea[] }>(`/api/v1/branches/${branchId}/dining-areas`, {
+				token
+			});
 		},
 		createDiningArea(
 			token: string,
@@ -437,7 +440,11 @@ export const api = {
 		list(token: string, branchId: number): Promise<ApiResponse<{ data: RestaurantTable[] }>> {
 			return request<{ data: RestaurantTable[] }>(`/api/v1/branches/${branchId}/tables`, { token });
 		},
-		create(token: string, branchId: number, payload: CreateTablePayload): Promise<ApiResponse<RestaurantTable>> {
+		create(
+			token: string,
+			branchId: number,
+			payload: CreateTablePayload
+		): Promise<ApiResponse<RestaurantTable>> {
 			return request<RestaurantTable>(`/api/v1/branches/${branchId}/tables`, {
 				method: 'POST',
 				token,
@@ -529,13 +536,15 @@ export const api = {
 				ticketId: number,
 				status: KitchenTicketStatus
 			): Promise<ApiResponse<KitchenTicket>> {
-				return request<KitchenTicket>(`/api/v1/branches/${branchId}/kds/tickets/${ticketId}/status`, {
-					method: 'PATCH',
-					token,
-					body: JSON.stringify({ status })
-				});
+				return request<KitchenTicket>(
+					`/api/v1/branches/${branchId}/kds/tickets/${ticketId}/status`,
+					{
+						method: 'PATCH',
+						token,
+						body: JSON.stringify({ status })
+					}
+				);
 			}
 		}
 	}
-
 };
