@@ -12,7 +12,9 @@ import (
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/handler"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/menu"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/middleware"
+	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/order"
 	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/organization"
+	"github.com/smithgh-ops/restaurant-multibranch-qris/apps/api/internal/table"
 )
 
 // New creates and returns the root Gin engine with all routes registered.
@@ -51,6 +53,14 @@ func New(cfg *config.Config, db *sql.DB) *gin.Engine {
 	menuRepo := menu.NewRepository(db)
 	menuHandler := menu.NewHandler(menuRepo)
 
+	// Table handler
+	tableRepo := table.NewRepository(db)
+	tableHandler := table.NewHandler(tableRepo)
+
+	// Order handler
+	orderRepo := order.NewRepository(db)
+	orderHandler := order.NewHandler(orderRepo)
+
 	// API v1 group
 	v1 := r.Group("/api/v1")
 	{
@@ -60,6 +70,8 @@ func New(cfg *config.Config, db *sql.DB) *gin.Engine {
 		organization.RegisterRoutes(v1, orgHandler, authMW)
 		branch.RegisterRoutes(v1, branchHandler, authMW)
 		menu.RegisterRoutes(v1, menuHandler, authMW)
+		table.RegisterRoutes(v1, tableHandler, authMW)
+		order.RegisterRoutes(v1, orderHandler, authMW)
 	}
 
 	return r

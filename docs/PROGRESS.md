@@ -29,7 +29,7 @@
 |------|-----------|--------|
 | **Fase 1** | Fondasi monorepo, scaffold awal | ✅ Selesai |
 | **Fase 2** | Autentikasi, manajemen cabang & menu, dashboard fungsional | ✅ Selesai |
-| **Fase 3** | POS / manajemen pesanan | 🔜 Direncanakan |
+| **Fase 3** | POS / manajemen pesanan | ✅ Selesai |
 | **Fase 4** | Integrasi QRIS gateway + webhook | 🔜 Direncanakan |
 | **Fase 5** | Kitchen Display System (KDS) real-time | 🔜 Direncanakan |
 | **Fase 6** | Laporan & analitik | 🔜 Direncanakan |
@@ -165,14 +165,55 @@
 
 ---
 
-## Fase 3 — POS & Manajemen Pesanan 🔜
+## Fase 3 — POS & Manajemen Pesanan ✅
 
-**Estimasi scope:**
-- [ ] Manajemen meja (dining areas & tables) per cabang
-- [ ] Endpoint pesanan: buat, update status, batalkan
-- [ ] Halaman POS kasir: pilih meja, tambah item, checkout
-- [ ] Halaman pesanan aktif per cabang
-- [ ] WebSocket event untuk update status pesanan real-time
+**Branch:** `copilot/implement-phase-2-authentication-role-management`
+
+### Backend (Go + Gin)
+
+#### Manajemen Meja (`internal/table/`)
+- [x] `GET /api/v1/branches/:branch_id/dining-areas` — daftar area makan
+- [x] `POST /api/v1/branches/:branch_id/dining-areas` — buat area makan baru
+- [x] `GET /api/v1/branches/:branch_id/tables` — daftar meja per cabang
+- [x] `POST /api/v1/branches/:branch_id/tables` — tambah meja baru
+- [x] `PATCH /api/v1/branches/:branch_id/tables/:id` — update meja (nomor, kapasitas, status)
+- [x] Validasi area makan dan meja termasuk dalam cabang yang benar
+
+#### Manajemen Pesanan (`internal/order/`)
+- [x] `GET /api/v1/orders` — daftar pesanan (filter: `branch_id`, `status`)
+- [x] `POST /api/v1/orders` — buat pesanan baru dengan item
+- [x] `GET /api/v1/orders/:id` — detail pesanan + item
+- [x] `PATCH /api/v1/orders/:id/status` — update status pesanan
+- [x] Pembuatan dalam transaksi: order + order_items sekaligus
+- [x] Resolusi harga: gunakan `price_override` per cabang jika ada, fallback ke `base_price`
+- [x] Validasi cabang aktif, meja aktif, dan item menu aktif milik org
+- [x] Generate `order_code` unik: `ORD-{YYYYMMDD}-{6 hex chars}`
+- [x] Status pesanan: `pending → confirmed → preparing → ready → completed / cancelled`
+
+### Frontend (SvelteKit)
+
+#### Halaman POS (`/dashboard/pos`)
+- [x] Pilih cabang aktif
+- [x] Pilih tipe pesanan: Makan di Tempat / Takeaway
+- [x] Pilih meja (lazy-load daftar meja per cabang saat dibutuhkan)
+- [x] Filter item menu berdasarkan kategori
+- [x] Grid item menu dengan tombol tambah ke keranjang
+- [x] Keranjang: tambah, kurangi item, lihat total
+- [x] Catatan pesanan opsional
+- [x] Checkout → POST `/api/v1/orders`, tampilkan kode pesanan setelah sukses
+
+#### Halaman Pesanan (`/dashboard/orders`)
+- [x] Filter pesanan berdasarkan cabang dan status
+- [x] Daftar pesanan dengan status berwarna
+- [x] Tombol kemajuan status (Konfirmasi / Mulai Proses / Tandai Siap / Selesaikan)
+- [x] Tombol batalkan pesanan (untuk status pending/confirmed)
+- [x] Expandable detail pesanan: tabel item, harga satuan, subtotal, total
+- [x] Tombol "+ Pesanan Baru" mengarah ke halaman POS
+
+#### API Client (`src/lib/api/client.ts`)
+- [x] Type: `DiningArea`, `RestaurantTable`, `Order`, `OrderItem`, `OrderStatus`, `OrderType`, `CreateOrderPayload`
+- [x] Fungsi: `api.tables.*` (diningAreas, list, create, update, createDiningArea)
+- [x] Fungsi: `api.orders.*` (list, get, create, updateStatus)
 
 ---
 

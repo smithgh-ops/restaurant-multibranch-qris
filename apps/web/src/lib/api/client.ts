@@ -115,6 +115,83 @@ export interface MenuBranchSetting {
 	updated_at: string;
 }
 
+// ── Table ─────────────────────────────────────────────────────────────────────
+
+export interface DiningArea {
+	id: number;
+	branch_id: number;
+	name: string;
+	description?: string;
+	is_active: boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface RestaurantTable {
+	id: number;
+	dining_area_id: number;
+	branch_id: number;
+	table_number: string;
+	capacity: number;
+	is_active: boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface CreateTablePayload {
+	dining_area_id: number;
+	table_number: string;
+	capacity?: number;
+}
+
+export interface UpdateTablePayload {
+	table_number?: string;
+	capacity?: number;
+	is_active?: boolean;
+}
+
+// ── Order ─────────────────────────────────────────────────────────────────────
+
+export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+export type OrderType = 'dine_in' | 'takeaway' | 'delivery';
+
+export interface OrderItem {
+	id: number;
+	order_id: number;
+	menu_item_id: number;
+	item_name: string;
+	unit_price: string;
+	quantity: number;
+	subtotal: string;
+	notes?: string;
+}
+
+export interface Order {
+	id: number;
+	branch_id: number;
+	table_id?: number;
+	order_code: string;
+	order_type: OrderType;
+	status: OrderStatus;
+	notes?: string;
+	subtotal: string;
+	tax_amount: string;
+	service_charge: string;
+	total_amount: string;
+	created_by?: number;
+	created_at: string;
+	updated_at: string;
+	items: OrderItem[];
+}
+
+export interface CreateOrderPayload {
+	branch_id: number;
+	table_id?: number;
+	order_type?: OrderType;
+	notes?: string;
+	items: { menu_item_id: number; quantity: number; notes?: string }[];
+}
+
 // ── HTTP helper ───────────────────────────────────────────────────────────────
 
 async function request<T>(
@@ -306,6 +383,77 @@ export const api = {
 				);
 			}
 		}
-	}
-};
+	},
 
+	// Tables
+	tables: {
+		diningAreas(token: string, branchId: number): Promise<ApiResponse<{ data: DiningArea[] }>> {
+			return request<{ data: DiningArea[] }>(`/api/v1/branches/${branchId}/dining-areas`, { token });
+		},
+		createDiningArea(
+			token: string,
+			branchId: number,
+			payload: { name: string; description?: string }
+		): Promise<ApiResponse<DiningArea>> {
+			return request<DiningArea>(`/api/v1/branches/${branchId}/dining-areas`, {
+				method: 'POST',
+				token,
+				body: JSON.stringify(payload)
+			});
+		},
+		list(token: string, branchId: number): Promise<ApiResponse<{ data: RestaurantTable[] }>> {
+			return request<{ data: RestaurantTable[] }>(`/api/v1/branches/${branchId}/tables`, { token });
+		},
+		create(token: string, branchId: number, payload: CreateTablePayload): Promise<ApiResponse<RestaurantTable>> {
+			return request<RestaurantTable>(`/api/v1/branches/${branchId}/tables`, {
+				method: 'POST',
+				token,
+				body: JSON.stringify(payload)
+			});
+		},
+		update(
+			token: string,
+			branchId: number,
+			tableId: number,
+			payload: UpdateTablePayload
+		): Promise<ApiResponse<RestaurantTable>> {
+			return request<RestaurantTable>(`/api/v1/branches/${branchId}/tables/${tableId}`, {
+				method: 'PATCH',
+				token,
+				body: JSON.stringify(payload)
+			});
+		}
+	},
+
+	// Orders
+	orders: {
+		list(
+			token: string,
+			filters?: { branch_id?: number; status?: OrderStatus }
+		): Promise<ApiResponse<{ data: Order[] }>> {
+			const params = new URLSearchParams();
+			if (filters?.branch_id) params.set('branch_id', String(filters.branch_id));
+			if (filters?.status) params.set('status', filters.status);
+			const qs = params.toString() ? '?' + params.toString() : '';
+			return request<{ data: Order[] }>(`/api/v1/orders${qs}`, { token });
+		},
+		get(token: string, id: number): Promise<ApiResponse<Order>> {
+			return request<Order>(`/api/v1/orders/${id}`, { token });
+		},
+		create(token: string, payload: CreateOrderPayload): Promise<ApiResponse<Order>> {
+			return request<Order>('/api/v1/orders', {
+				method: 'POST',
+				token,
+				body: JSON.stringify(payload)
+			});
+		},
+		updateStatus(token: string, id: number, status: OrderStatus): Promise<ApiResponse<Order>> {
+			return request<Order>(`/api/v1/orders/${id}/status`, {
+				method: 'PATCH',
+				token,
+				body: JSON.stringify({ status })
+			});
+		}
+	}
+
+};
