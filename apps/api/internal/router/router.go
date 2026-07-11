@@ -2,6 +2,7 @@ package router
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -61,7 +62,7 @@ func New(cfg *config.Config, db *sql.DB) *gin.Engine {
 	// KDS handler
 	kdsRepo := kds.NewRepository(db)
 	kdsHub := kds.NewHub()
-	kdsHandler := kds.NewHandler(kdsRepo, kdsHub, cfg.JWTSecret, cfg.CORSOrigins)
+	kdsHandler := kds.NewHandler(kdsRepo, kdsHub, cfg.JWTSecret, parseAllowedOrigins(cfg.CORSOrigins))
 
 	// Order handler
 	orderRepo := order.NewRepository(db).WithKDS(kdsRepo, kdsHub)
@@ -82,4 +83,15 @@ func New(cfg *config.Config, db *sql.DB) *gin.Engine {
 	}
 
 	return r
+}
+
+func parseAllowedOrigins(origins string) map[string]struct{} {
+	allowedOrigins := make(map[string]struct{})
+	for _, origin := range strings.Split(origins, ",") {
+		trimmed := strings.TrimSpace(origin)
+		if trimmed != "" {
+			allowedOrigins[trimmed] = struct{}{}
+		}
+	}
+	return allowedOrigins
 }

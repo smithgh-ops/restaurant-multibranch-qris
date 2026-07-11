@@ -107,11 +107,8 @@
 
 	function playNotificationTone() {
 		try {
-			const AudioContextCtor =
-				window.AudioContext ||
-				(window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-			if (!AudioContextCtor) return;
-			audioContext ??= new AudioContextCtor();
+			if (!window.AudioContext) return;
+			audioContext ??= new window.AudioContext();
 			const oscillator = audioContext.createOscillator();
 			const gain = audioContext.createGain();
 			oscillator.type = 'sine';

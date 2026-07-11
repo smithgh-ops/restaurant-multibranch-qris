@@ -23,14 +23,7 @@ type Handler struct {
 }
 
 // NewHandler creates a new KDS handler.
-func NewHandler(repo *Repository, hub *Hub, jwtSecret, corsOrigins string) *Handler {
-	allowedOrigins := make(map[string]struct{})
-	for _, origin := range strings.Split(corsOrigins, ",") {
-		trimmed := strings.TrimSpace(origin)
-		if trimmed != "" {
-			allowedOrigins[trimmed] = struct{}{}
-		}
-	}
+func NewHandler(repo *Repository, hub *Hub, jwtSecret string, allowedOrigins map[string]struct{}) *Handler {
 	return &Handler{
 		repo:           repo,
 		hub:            hub,
