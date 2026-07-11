@@ -11,6 +11,12 @@
 	let editingItem = $state<MenuItem | null>(null);
 	let selectedCategoryFilter = $state<number | null>(null);
 
+	// Preview for new-item file upload
+	let newItemImagePreview = $state<string | null>(null);
+
+	// Preview for edit-item file upload
+	let editImagePreview = $state<string | null>(null);
+
 	const filteredItems = $derived(
 		selectedCategoryFilter
 			? data.items.filter((item) => item.category_id === selectedCategoryFilter)
@@ -30,6 +36,16 @@
 
 	function getCategoryName(id: number) {
 		return data.categories.find((c) => c.id === id)?.name ?? '-';
+	}
+
+	function handleNewImageChange(e: Event) {
+		const file = (e.target as HTMLInputElement).files?.[0];
+		newItemImagePreview = file ? URL.createObjectURL(file) : null;
+	}
+
+	function handleEditImageChange(e: Event) {
+		const file = (e.target as HTMLInputElement).files?.[0];
+		editImagePreview = file ? URL.createObjectURL(file) : null;
 	}
 </script>
 
@@ -51,7 +67,11 @@
 			{form.error}
 		</div>
 	{/if}
-	{#if form && form.success}
+	{#if form && form.success && form.warning}
+		<div class="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 text-sm">
+			{form.warning}
+		</div>
+	{:else if form && form.success}
 		<div class="mb-4 rounded-lg bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-sm">
 			Berhasil disimpan.
 		</div>
@@ -182,10 +202,14 @@
 				<form
 					method="POST"
 					action="?/createItem"
+					enctype="multipart/form-data"
 					use:enhance={() => {
 						return async ({ update }) => {
 							await update();
-							if (form?.success) showItemForm = false;
+							if (form?.success) {
+								showItemForm = false;
+								newItemImagePreview = null;
+							}
 						};
 					}}
 					class="space-y-4"
@@ -241,14 +265,22 @@
 						</div>
 					</div>
 					<div>
-						<label for="new-item-image" class="block text-sm font-medium text-gray-700 mb-1">URL Gambar</label>
-						<input
-							id="new-item-image"
-							name="image_url"
-							type="url"
-							placeholder="https://... (opsional)"
-							class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-						/>
+						<label for="new-item-image" class="block text-sm font-medium text-gray-700 mb-1">
+							Gambar Menu <span class="text-gray-400 font-normal">(opsional, jpg/png/webp, maks 5 MB)</span>
+						</label>
+						<div class="flex items-center gap-4">
+							{#if newItemImagePreview}
+								<img src={newItemImagePreview} alt="preview" class="w-16 h-16 rounded-lg object-cover border border-gray-200 shrink-0" />
+							{/if}
+							<input
+								id="new-item-image"
+								name="image"
+								type="file"
+								accept="image/jpeg,image/png,image/webp"
+								onchange={handleNewImageChange}
+								class="block text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100"
+							/>
+						</div>
 					</div>
 					<div class="flex gap-3">
 						<button
@@ -259,7 +291,7 @@
 						</button>
 						<button
 							type="button"
-							onclick={() => (showItemForm = false)}
+							onclick={() => { showItemForm = false; newItemImagePreview = null; }}
 							class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg"
 						>
 							Batal
@@ -330,22 +362,6 @@
 							</select>
 						</div>
 					</div>
-					<div>
-						<label for="edit-item-image" class="block text-sm font-medium text-gray-700 mb-1">URL Gambar</label>
-						<div class="flex gap-3 items-start">
-							{#if editingItem.image_url}
-								<img src={editingItem.image_url} alt={editingItem.name} class="w-14 h-14 rounded-lg object-cover border border-gray-200 shrink-0" />
-							{/if}
-							<input
-								id="edit-item-image"
-								name="image_url"
-								type="url"
-								value={editingItem.image_url ?? ''}
-								placeholder="https://... (opsional)"
-								class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-							/>
-						</div>
-					</div>
 					<div class="flex gap-3">
 						<button
 							type="submit"
@@ -355,13 +371,91 @@
 						</button>
 						<button
 							type="button"
-							onclick={() => (editingItem = null)}
+							onclick={() => { editingItem = null; editImagePreview = null; }}
 							class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg"
 						>
 							Batal
 						</button>
 					</div>
 				</form>
+
+				<!-- Image management section (separate from the update form) -->
+				<div class="mt-5 pt-5 border-t border-gray-100">
+					<p class="text-sm font-medium text-gray-700 mb-3">Gambar Menu</p>
+					<div class="flex items-start gap-4 flex-wrap">
+						<!-- Current image or placeholder -->
+						{#if editImagePreview}
+							<img src={editImagePreview} alt="preview baru" class="w-20 h-20 rounded-lg object-cover border-2 border-orange-300 shrink-0" />
+						{:else if editingItem.image_url}
+							<img src={editingItem.image_url} alt={editingItem.name} class="w-20 h-20 rounded-lg object-cover border border-gray-200 shrink-0" />
+						{:else}
+							<div class="w-20 h-20 rounded-lg bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center text-3xl shrink-0">
+								🖼️
+							</div>
+						{/if}
+
+						<div class="flex flex-col gap-2 flex-1 min-w-0">
+							<!-- Upload new image -->
+							<form
+								method="POST"
+								action="?/uploadImage"
+								enctype="multipart/form-data"
+								use:enhance={() => {
+									return async ({ update }) => {
+										await update({ reset: false });
+										editImagePreview = null;
+										// Refresh editing item from updated data list
+										if (form?.success && form.action === 'uploadImage' && editingItem) {
+											const updated = data.items.find((i) => i.id === editingItem!.id);
+											if (updated) editingItem = updated;
+										}
+									};
+								}}
+								class="flex items-center gap-2 flex-wrap"
+							>
+								<input type="hidden" name="id" value={editingItem.id} />
+								<input
+									name="image"
+									type="file"
+									accept="image/jpeg,image/png,image/webp"
+									onchange={handleEditImageChange}
+									class="block text-sm text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100"
+								/>
+								<button
+									type="submit"
+									class="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg shrink-0"
+								>
+									Unggah
+								</button>
+							</form>
+							<p class="text-xs text-gray-400">jpg, png, atau webp · maks 5 MB</p>
+
+							<!-- Delete image (only shown when image exists) -->
+							{#if editingItem.image_url}
+								<form
+									method="POST"
+									action="?/deleteImage"
+									use:enhance={() => {
+										return async ({ update }) => {
+											await update({ reset: false });
+											if (form?.success && form.action === 'deleteImage' && editingItem) {
+												editingItem = { ...editingItem, image_url: undefined };
+											}
+										};
+									}}
+								>
+									<input type="hidden" name="id" value={editingItem.id} />
+									<button
+										type="submit"
+										class="text-sm text-red-500 hover:text-red-700 font-medium"
+									>
+										Hapus Gambar
+									</button>
+								</form>
+							{/if}
+						</div>
+					</div>
+				</div>
 			</div>
 		{/if}
 

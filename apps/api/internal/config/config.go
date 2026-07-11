@@ -31,6 +31,10 @@ type Config struct {
 	JWTSecret           string
 	AccessTokenMinutes  int // duration of access token in minutes
 	RefreshTokenDays    int // duration of refresh token in days
+
+	// File upload
+	UploadDir     string // local directory to store uploaded files
+	PublicBaseURL string // base URL used to build public URLs for uploaded files
 }
 
 // Load reads configuration from environment variables, falling back to safe defaults.
@@ -64,6 +68,9 @@ func Load() *Config {
 		JWTSecret:          getEnv("JWT_SECRET", "change-me-in-production"),
 		AccessTokenMinutes: accessTokenMinutes,
 		RefreshTokenDays:   refreshTokenDays,
+
+		UploadDir:     getEnv("UPLOAD_DIR", "./uploads"),
+		PublicBaseURL: getEnv("PUBLIC_BASE_URL", "http://localhost:8080"),
 	}
 }
 

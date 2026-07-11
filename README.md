@@ -204,6 +204,8 @@ Untuk lingkungan produksi, disarankan menggunakan alat migrasi seperti [golang-m
 | PUT    | `/api/v1/users/:id/roles`                  | JWT  | Ganti role pengguna (org_admin)       |
 | PATCH  | `/api/v1/auth/me/password`                 | JWT  | Ganti password diri sendiri           |
 | PATCH  | `/api/v1/organization`                     | JWT  | Update nama/slug organisasi           |
+| POST   | `/api/v1/menu/items/:id/image`             | JWT  | Upload gambar item menu (multipart)   |
+| DELETE | `/api/v1/menu/items/:id/image`             | JWT  | Hapus gambar item menu                |
 
 ---
 

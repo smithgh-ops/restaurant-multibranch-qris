@@ -57,7 +57,7 @@ func New(cfg *config.Config, db *sql.DB) *gin.Engine {
 
 	// Menu handler
 	menuRepo := menu.NewRepository(db)
-	menuHandler := menu.NewHandler(menuRepo)
+	menuHandler := menu.NewHandler(menuRepo).WithUpload(cfg.UploadDir, cfg.PublicBaseURL)
 
 	// Table handler
 	tableRepo := table.NewRepository(db)
@@ -87,6 +87,9 @@ func New(cfg *config.Config, db *sql.DB) *gin.Engine {
 	// User management handler
 	userRepo := user.NewRepository(db)
 	userHandler := user.NewHandler(userRepo)
+
+	// Serve uploaded files (menu images, etc.)
+	r.Static("/uploads", cfg.UploadDir)
 
 	// API v1 group
 	v1 := r.Group("/api/v1")

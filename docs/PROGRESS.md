@@ -37,6 +37,7 @@
 | **Fase 6** | Laporan & analitik                                         | ✅ Selesai      |
 | **Fase 7** | Self-order QR meja, gambar menu, adapter gateway           | ✅ Selesai      |
 | **Fase 8** | Manajemen pengguna & pengaturan profil                     | ✅ Selesai      |
+| **Fase 9** | Upload gambar menu (lokal)                                 | ✅ Selesai      |
 
 ---
 
@@ -456,3 +457,56 @@ go run ./cmd/seed \
 - Refresh token disimpan sebagai SHA-256 hash — token plaintext hanya dikirim sekali ke client
 - Password user di-hash dengan bcrypt (cost default)
 - Tidak ada user/password default dalam migrasi
+
+---
+
+## Fase 9 — Upload Gambar Menu ✅
+
+**Branch:** `copilot/implement-phase-2-authentication-role-management`
+
+### Backend (Go + Gin)
+
+#### Config
+
+- [x] `UPLOAD_DIR` — direktori penyimpanan file gambar (default `./uploads`)
+- [x] `PUBLIC_BASE_URL` — URL dasar untuk membangun URL publik file (default `http://localhost:8080`)
+
+#### Menu Handler (`internal/menu/`)
+
+- [x] `POST /api/v1/menu/items/:id/image` — upload gambar item menu (multipart/form-data, field `image`)
+  - Validasi tipe MIME dari konten file: hanya `image/jpeg`, `image/png`, `image/webp`
+  - Batas ukuran: 5 MB
+  - Nama file aman: `menu_{id}_{namaasli}.{ext}`
+  - Hapus otomatis file lama saat gambar diganti
+  - Simpan URL publik di kolom `image_url` di database
+- [x] `DELETE /api/v1/menu/items/:id/image` — hapus gambar item menu
+  - Set `image_url = NULL` di database
+  - Hapus file fisik dari disk
+- [x] `WithUpload(uploadDir, publicBaseURL)` — fluent config pada handler
+- [x] `Repository.SetItemImage()` — update `image_url` di DB
+- [x] `Repository.ClearItemImage()` — clear `image_url` di DB, kembalikan URL lama
+- [x] Static serving: `GET /uploads/*` — melayani file gambar yang diunggah
+
+### Frontend (SvelteKit)
+
+#### API Client (`src/lib/api/client.ts`)
+
+- [x] `api.menu.items.uploadImage(token, itemId, file)` — upload file langsung ke API
+- [x] `api.menu.items.deleteImage(token, itemId)` — hapus gambar item
+
+#### Halaman Menu (`/dashboard/menu`)
+
+- [x] Form tambah item: input file upload (jpg/png/webp, maks 5 MB) dengan preview thumbnail
+- [x] Form edit item: section "Gambar Menu" terpisah dari form update teks
+  - Preview gambar saat ini
+  - Upload gambar baru (form multipart terpisah)
+  - Tombol "Hapus Gambar" (hanya tampil jika gambar ada)
+  - Preview gambar baru sebelum diunggah
+- [x] Server action `uploadImage` — meneruskan file ke API sebagai multipart
+- [x] Server action `deleteImage` — memanggil DELETE endpoint
+- [x] Server action `createItem` — membuat item lalu upload gambar jika disertakan (2 langkah)
+- [x] Feedback warning jika item berhasil dibuat tapi gambar gagal diunggah
+
+#### Environment
+
+- [x] `.env.example` diperbarui dengan `UPLOAD_DIR` dan `PUBLIC_BASE_URL`

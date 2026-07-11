@@ -555,6 +555,31 @@ export const api = {
 					token,
 					body: JSON.stringify(payload)
 				});
+			},
+			async uploadImage(token: string, itemId: number, file: File): Promise<ApiResponse<MenuItem>> {
+				try {
+					const form = new FormData();
+					form.append('image', file);
+					const res = await fetch(`${API_BASE_URL}/api/v1/menu/items/${itemId}/image`, {
+						method: 'POST',
+						headers: { Authorization: 'Bearer ' + token },
+						body: form
+					});
+					if (!res.ok) {
+						const body = await res.json().catch(() => ({}));
+						return { error: body.error ?? `HTTP ${res.status}` };
+					}
+					const data: MenuItem = await res.json();
+					return { data };
+				} catch (err) {
+					return { error: err instanceof Error ? err.message : 'Network error' };
+				}
+			},
+			deleteImage(token: string, itemId: number): Promise<ApiResponse<{ message: string }>> {
+				return request<{ message: string }>(`/api/v1/menu/items/${itemId}/image`, {
+					method: 'DELETE',
+					token
+				});
 			}
 		}
 	},

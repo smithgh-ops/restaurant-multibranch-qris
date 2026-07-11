@@ -354,3 +354,42 @@ func (r *Repository) GetBranchSettings(ctx context.Context, itemID, orgID uint64
 	}
 	return settings, rows.Err()
 }
+
+// SetItemImage updates image_url for a menu item and returns the updated item.
+// It verifies the item belongs to the given organization.
+func (r *Repository) SetItemImage(ctx context.Context, itemID, orgID uint64, imageURL string) (*Item, error) {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE menu_items SET image_url = ?, updated_at = NOW()
+		WHERE id = ? AND organization_id = ?`,
+		imageURL, itemID, orgID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("set item image: %w", err)
+	}
+	return r.FindItemByID(ctx, itemID, orgID)
+}
+
+// ClearItemImage sets image_url to NULL for a menu item and returns the old image URL so the caller
+// can delete the file from disk. It returns ("", nil) when there was no image set.
+func (r *Repository) ClearItemImage(ctx context.Context, itemID, orgID uint64) (oldImageURL string, err error) {
+	// Fetch the current image_url first.
+	var cur sql.NullString
+	row := r.db.QueryRowContext(ctx, `
+		SELECT image_url FROM menu_items WHERE id = ? AND organization_id = ?`,
+		itemID, orgID,
+	)
+	if err := row.Scan(&cur); err != nil {
+		return "", fmt.Errorf("find item for image clear: %w", err)
+	}
+	if !cur.Valid {
+		return "", nil
+	}
+	if _, err := r.db.ExecContext(ctx, `
+		UPDATE menu_items SET image_url = NULL, updated_at = NOW()
+		WHERE id = ? AND organization_id = ?`,
+		itemID, orgID,
+	); err != nil {
+		return "", fmt.Errorf("clear item image: %w", err)
+	}
+	return cur.String, nil
+}
