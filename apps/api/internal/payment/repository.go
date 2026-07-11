@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"strconv"
 	"strings"
@@ -297,6 +298,7 @@ func (r *Repository) ProcessWebhook(ctx context.Context, req *WebhookRequest, ra
 		return nil, fmt.Errorf("load payment branch: %w", err)
 	}
 	if paymentBranchID != req.BranchID {
+		slog.Warn("payment webhook branch mismatch", "invoice_id", req.InvoiceID, "expected_branch_id", paymentBranchID, "received_branch_id", req.BranchID)
 		return nil, fmt.Errorf("branch webhook tidak cocok")
 	}
 

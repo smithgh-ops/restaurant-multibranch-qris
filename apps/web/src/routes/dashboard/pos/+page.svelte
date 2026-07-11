@@ -155,7 +155,7 @@
 						{/if}
 					</div>
 					{#if paymentInfo.qr_code_url}
-						<img src={paymentInfo.qr_code_url} alt="QRIS Dinamis" class="w-48 h-48 rounded-lg border border-orange-200 bg-white p-2" />
+						<img src={paymentInfo.qr_code_url} alt={`QR code pembayaran untuk pesanan ${orderSuccess}`} class="w-48 h-48 rounded-lg border border-orange-200 bg-white p-2" />
 					{:else if paymentInfo.qr_string}
 						<pre class="text-xs bg-white border border-orange-200 rounded-lg p-2 overflow-x-auto">{paymentInfo.qr_string}</pre>
 					{/if}

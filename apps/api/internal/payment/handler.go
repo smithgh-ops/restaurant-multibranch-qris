@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -166,6 +167,7 @@ func (h *Handler) Webhook(c *gin.Context) {
 
 	signature := c.GetHeader("X-QRIS-Signature")
 	if !h.repo.ValidateWebhookSignature(c.Request.Context(), req.BranchID, raw, signature) {
+		slog.Warn("invalid payment webhook signature", "branch_id", req.BranchID, "event_id", req.EventID)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "signature webhook tidak valid"})
 		return
 	}
