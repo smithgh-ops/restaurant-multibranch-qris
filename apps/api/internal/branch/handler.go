@@ -45,7 +45,7 @@ func (h *Handler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": branches})
 }
 
-// Get handles GET /api/v1/branches/:id.
+// Get handles GET /api/v1/branches/:branch_id.
 func (h *Handler) Get(c *gin.Context) {
 	orgID, ok := middleware.OrgIDFromContext(c)
 	if !ok {
@@ -53,9 +53,9 @@ func (h *Handler) Get(c *gin.Context) {
 		return
 	}
 
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := strconv.ParseUint(c.Param("branch_id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "id tidak valid"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "branch_id tidak valid"})
 		return
 	}
 
@@ -99,7 +99,7 @@ func (h *Handler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, b)
 }
 
-// Update handles PATCH /api/v1/branches/:id.
+// Update handles PATCH /api/v1/branches/:branch_id.
 func (h *Handler) Update(c *gin.Context) {
 	orgID, ok := middleware.OrgIDFromContext(c)
 	if !ok {
@@ -107,9 +107,9 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := strconv.ParseUint(c.Param("branch_id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "id tidak valid"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "branch_id tidak valid"})
 		return
 	}
 
@@ -142,8 +142,8 @@ func RegisterRoutes(v1 *gin.RouterGroup, h *Handler, authMiddleware gin.HandlerF
 	{
 		branches.GET("", h.List)
 		branches.POST("", h.Create)
-		branches.GET("/:id", h.Get)
-		branches.PATCH("/:id", h.Update)
+		branches.GET("/:branch_id", h.Get)
+		branches.PATCH("/:branch_id", h.Update)
 	}
 }
 

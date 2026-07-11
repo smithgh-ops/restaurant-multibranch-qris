@@ -23,7 +23,7 @@ type CreateBranchRequest struct {
 	Phone   *string `json:"phone"`
 }
 
-// UpdateBranchRequest is the payload for PATCH /api/v1/branches/:id.
+// UpdateBranchRequest is the payload for PATCH /api/v1/branches/:branch_id.
 type UpdateBranchRequest struct {
 	Name     *string `json:"name"`
 	Slug     *string `json:"slug"`
